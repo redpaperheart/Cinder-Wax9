@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cinder>
+  <block
+  	name="Cinder-Wax9"
+  	id="com.redpaperheart.wax3"
+  	author="Red Paper Heart"
+    git="https://github.com/redpaperheart/Cinder-Wax9"
+  	summary="Cinder block to access the Wax9 IMU sensor by Axivity."
+  	>
+  	<supports os="macosx" />
+    <includePath>include</includePath>
+    <header>include/Wax9.h</header>
+    <source>src/Wax9.cpp</source>
+  </block>  
+</cinder>
