@@ -114,7 +114,7 @@
 		29B97314FDCFA39411CA2CEA /* Wax3Sample */ = {
 			isa = PBXGroup;
 			children = (
-				60C3359E182419FA00C062E1 /* Cinder-Wax3Accel */,
+				60C3359E182419FA00C062E1 /* Cinder-Wax9 */,
 				29B97315FDCFA39411CA2CEA /* Headers */,
 				080E96DDFE201D6D7F000001 /* Source */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -151,13 +151,13 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		60C3359E182419FA00C062E1 /* Cinder-Wax3Accel */ = {
+		60C3359E182419FA00C062E1 /* Cinder-Wax9 */ = {
 			isa = PBXGroup;
 			children = (
 				60C335A0182419FA00C062E1 /* include */,
 				60C335A5182419FA00C062E1 /* src */,
 			);
-			name = "Cinder-Wax3Accel";
+			name = "Cinder-Wax9";
 			path = ../..;
 			sourceTree = "<group>";
 		};
