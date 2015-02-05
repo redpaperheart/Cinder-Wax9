@@ -1,7 +1,7 @@
 Cinder-Wax9
 ========================
 
-The [WAX9](http://axivity.com/v2/index.php?page=product.php&product=wax9) bluetooth 3-axis IMU built by [Axivity](http://axivity.com) that includes an accelerometer, a gyroscope, a magnetometer and a temperature sensor.
+The [WAX9](http://axivity.com/v2/index.php?page=product.php&product=wax9) is a bluetooth 3-axis IMU built by [Axivity](http://axivity.com) that includes an accelerometer, a gyroscope, a magnetometer and a temperature sensor.
 
 This Block provides an interface to obtain data from the sensor in real time from within a Cinder app, without the need to run any external software. It also provides a set of commonly needed functions to extract data from an IMU, which and can be extended or reused for other models.
 
