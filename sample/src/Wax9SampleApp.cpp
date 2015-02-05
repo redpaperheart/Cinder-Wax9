@@ -27,8 +27,9 @@ class Wax9SampleApp : public AppNative {
 void Wax9SampleApp::setup()
 {
     mFlash = 0.0f;
-    flatPosition = angleAxis(toRadians(90.0f), vec3(0, 0, 1));// *
-//                   angleAxis(toRadians(180.0f), vec3(0, 1, 0));
+    
+    // callibration position: vertical, looking at logo with arrow down
+    flatPosition = quat(vec3(toRadians(180.0f), toRadians(180.0f), 0.0f));
     
     // Initialize Wax9 with its port name
     // (type this in terminal to find the connected devices: ls /dev/tty.*)
@@ -69,7 +70,7 @@ void Wax9SampleApp::draw()
 
     gl::drawString(to_string((int)getAverageFps()), vec2(20, 20));
     
-    if (mWax9.isConnected() && mWax9.getReadings()->size() > 0) {
+    if (mWax9.isConnected() && mWax9.hasReadings()) {
     
         // graph acceleration history per axis
         float scaleX = 6.0f;
