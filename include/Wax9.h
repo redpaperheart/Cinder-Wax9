@@ -1,12 +1,12 @@
 /*
  Wax9
- Class to obtain data from the Wax3 device via serial port.
+ Class to obtain data from the Wax9 IMU via serial port.
  
  Code based on the waxrec application:
- https://code.google.com/p/openmovement/source/browse/trunk/Software/WAX3/waxrec
+ https://github.com/digitalinteraction/openmovement/tree/master/Software/WAX3/waxrec
  
  For more information read developer guide:
- http://openmovement.googlecode.com/svn/trunk/Software/WAX3/WAX%20Developer%20Guide.pdf
+ http://axivity.com/v2/products/WAX9/WAX9DeveloperGuide.pdf
  */
 
 /*

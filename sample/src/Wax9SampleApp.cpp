@@ -30,7 +30,7 @@ void Wax9SampleApp::setup()
     flatPosition = angleAxis(toRadians(90.0f), vec3(0, 0, 1));// *
 //                   angleAxis(toRadians(180.0f), vec3(0, 1, 0));
     
-    // Initialize Wax3 receiver with its port name
+    // Initialize Wax9 with its port name
     // (type this in terminal to find the connected devices: ls /dev/tty.*)
     try {
         mWax9.setup("WAX9");

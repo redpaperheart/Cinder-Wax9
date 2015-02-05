@@ -2,7 +2,7 @@
 <cinder>
   <block
   	name="Cinder-Wax9"
-  	id="com.redpaperheart.wax3"
+  	id="com.redpaperheart.wax9"
   	author="Red Paper Heart"
     git="https://github.com/redpaperheart/Cinder-Wax9"
   	summary="Cinder block to access the Wax9 IMU sensor by Axivity."
