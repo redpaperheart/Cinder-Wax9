@@ -16,12 +16,14 @@
 //----------------------------------------------------------------------------------------------------
 // Variable declaration
 
+extern volatile float sampleFreq;       // trying to make it a variable to use the timestamp beftween each packet
 extern volatile float beta;				// algorithm gain
 extern volatile float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
 
 //---------------------------------------------------------------------------------------------------
 // Function declarations
-
+// Gyroscope measurement in radians/s.
+// Accelerometer and magnetometer in any calibrated units, since it's normalized later
 void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
 void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az);
 

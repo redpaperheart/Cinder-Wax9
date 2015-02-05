@@ -37,13 +37,6 @@
  POSSIBILITY OF SUCH DAMAGE.
  */
 
-/*
- * TO DO
- * separate IMU interface from data acquisition.
- * join with WAX3 block
- *
- */
-
 #pragma once
 
 #include "cinder/app/App.h"
@@ -57,7 +50,6 @@
 
 // Wax Structures
 #define BUFFER_SIZE 0xffff
-#define MAX_SAMPLES 32
 
 using namespace std;
 using namespace ci;
@@ -90,11 +82,14 @@ typedef struct
     vec3 acc;
     vec3 gyr;
     vec3 mag;
+    float accLen;
+    quat rot;
 } Wax9Sample;
 
 typedef  boost::circular_buffer<Wax9Sample> SampleBuffer;
 
 // Declare variables and functions form C file
+extern "C" volatile float sampleFreq;
 extern "C" volatile float beta;				// algorithm gain
 extern "C" volatile float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
 extern "C" void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
@@ -105,44 +100,30 @@ public:
     Wax9();
     ~Wax9();
     
-    bool        setup(string portName, int historyLength = 120);
+    bool        setup(string portName, int historyLength = 400);
     bool        start();
     bool        stop();
     int         update();  // only call if we don't want it threaded
     
+    void        resetOrientation(quat q = quat());
     void        setDebug(bool b)                    { bDebug = b; }
     void        setSmooth(bool s, float f = 0.5f)   { bSmooth = s; mSmoothFactor = f; }
     
     bool        isConnected()                       { return bConnected; }
     bool        isEnabled()                         { return bEnabled; }
-    bool        hasNewReadings();                   
-
-//    vec3        getNextReading();
     
-    int         getNumNewReadings()                 { return mNewReadings; }
-    ushort      getId()                             { return mId; }
-    
-//    vec3        getAccel()                          {return mAccels->front();}
-//    vec3        getAccel(int i)                     {return mAccels->at(i);}
-//    vec3*       getAccelHistory()                   {return mAccels->linearize();}
-//    float       getAccelMagnitude()                 {return mAccelMags->front();}
-//    float       getAccelMagnitude(int i)            {return mAccelMags->at(i);}
-//    float*      getAccelMagHistory()                {return mAccelMags->linearize();}
-//    CircBuffer  getAccelMagHistoryBuffer()          {return mAccelMags;}
-//    
-//    vec3        getMaxAccel()                       {return mMaxAccel;}
-//    float       getMaxAccelMagnitude()              {return mMaxAccelMag;}
-    int         getHistoryLength()                  {return mSamples->size();}
+    bool        hasReadings()                       { return !mSamples->empty(); }
+    bool        hasNewReadings()                    { return mNewReadings > 0; }    // not used yet
+    int         getNumNewReadings()                 { return mNewReadings; }        // not used yet
+    int         getNumReadings()                    { return mSamples->size(); }
     
     Wax9Sample   getReading()                       { return mSamples->front(); }
     Wax9Sample   getReading(int i)                  { return mSamples->at(i); }
     SampleBuffer* getReadings()                     { return mSamples; }
     
-    quat        getOrientation()                    { return mOrientation; }
-    
-    float       getPitch(); // rotation in x axis in rad
-    float       getRoll(); // rotation in z axis in rad
-    vec2        getPitchRoll();
+    quat        getOrientation()                    { return getReading().rot; }
+    vec3        getAcceleration()                   { return getReading().acc; }
+    float       getAccelerationLength()             { return getReading().accLen; }
     
 protected:
     
@@ -152,7 +133,7 @@ protected:
     size_t              lineread(void *inBuffer, size_t len);
     Wax9Packet*         parseWax9Packet(const void *inputBuffer, size_t len, unsigned long long now);
     Wax9Sample          processPacket(Wax9Packet *packet);
-    void                updateOrientation();
+    quat                calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp);
     
     // utils
     void                printWax9(Wax9Packet *waxPacket);
@@ -162,19 +143,16 @@ protected:
     // imu algorithms
     void complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll);
 
-    
     // state
     bool                bConnected;
     bool                bDebug;
     bool                bEnabled;
     bool                bSmooth;
-    int                 mId;
     int                 mNewReadings;
     int                 mHistoryLength;
-    float               mMaxAccelMag;
     float               mSmoothFactor;
     
-    // device settings - to construct init string
+    // device settings to construct init string
     bool                bAccOn;
     bool                bGyrOn;
     bool                bMagOn;
@@ -187,19 +165,8 @@ protected:
     int                 mDataMode;
     
     // data
-    quat                mOrientation;
     char                mBuffer[BUFFER_SIZE];   // send back to class
-    float               mPitch, mRoll;
-    vec3                mMaxAccel;
     Serial              mSerial;
     SampleBuffer*       mSamples;
-    
-//    boost::circular_buffer<float>* mAccelMags;
-//    boost::circular_buffer<vec3>* mAccels;
-    
-
-    
-//    AccelDataSource* mDataSource;
-//    map<ushort, ConcurrentCircularBuffer<WaxSample>* > mBuffers;
 };
 

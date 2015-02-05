@@ -20,13 +20,13 @@
 
 //---------------------------------------------------------------------------------------------------
 // Definitions
-
-#define sampleFreq	512.0f		// sample frequency in Hz
-#define betaDef		0.1f		// 2 * proportional gain
+// explanation for beta https://forum.sparkfun.com/viewtopic.php?f=14&t=22738#p105118
+//#define sampleFreq	30.0f//512.0f		// sample frequency in Hz   // let's try to make it a variable
+#define betaDef		0.1f                // 2 * proportional gain
 
 //---------------------------------------------------------------------------------------------------
 // Variable definitions
-
+volatile float sampleFreq = 30.0f;
 volatile float beta = betaDef;								// 2 * proportional gain (Kp)
 volatile float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;	// quaternion of sensor frame relative to auxiliary frame
 

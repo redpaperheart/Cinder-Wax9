@@ -42,26 +42,19 @@ Wax9::Wax9()
     bSmooth  = false;
     mSmoothFactor = 0.8;
     mNewReadings = 0;
-    
-    // data
-    mMaxAccel = vec3(0.0f);
-    mMaxAccelMag = 0;
     mHistoryLength = 120;
     
     // device settings
     bAccOn = true;
     bGyrOn = true;
     bMagOn = true;
-    mOutputRate = 30;
+    mOutputRate = 120;
     mAccRate = 200;
     mGyrRate = 200;
     mMagRate = 80;
     mAccRange = 8;
     mGyrRange = 2000;
     mDataMode = 1;
-    
-    mPitch = 0.0f;
-    mRoll = 0.0f;
 }
 
 Wax9::~Wax9()
@@ -74,7 +67,6 @@ bool Wax9::setup(string portName, int historyLength)
     bConnected = false;
     mHistoryLength = historyLength;
     mSamples = new SampleBuffer(mHistoryLength);
-//    mAccelMags  = new boost::circular_buffer<float>(mHistoryLength);
     
     app::console() << "Available serial ports: " << std::endl;
     for( auto device : Serial::getDevices()) app::console() << device.getName() << ", " << device.getPath() << std::endl;
@@ -143,50 +135,17 @@ int Wax9::update()
 {
     if (bConnected) {
         int r = readPackets(mBuffer);
-        
-        // update pitch roll
-//        if (mSamples->size() > 0) {
-//            updateOrientation();
-//        }
         return r;
     }
     return 0;
 }
 
-//vec3 Wax9::getNextReading()
-//{
-//    WaxSample sample;
-//    mBuffers.at(id)->popBack(&sample);
-//    return vec3(sample.x/256.0f, sample.y/256.0f, sample.z/256.0f);
-//}
-
-bool Wax9::hasNewReadings()
+void Wax9::resetOrientation(quat q)
 {
-    return mSamples->size() > 0;
-}
-
-float Wax9::getPitch()
-{
-    // using accelerometer
-    if (mSamples->size() > 0) {
-        vec3 acc = mSamples->front().acc;
-        return atan2(acc.x, sqrt(acc.y*acc.y + acc.z*acc.z));
-    }
-    
-    // using accelerometer + gyro
-    return mPitch;
-}
-
-float Wax9::getRoll()
-{
-    // using accelerometer
-//    if (mSamples->size() > 0) {
-//        vec3 acc = mSamples->front().acc;
-//        return atan2(-acc.y, acc.z);
-//    }
-    
-    // using accelerometer + gyro
-    return mRoll;
+    q0 = q.x;
+    q1 = q.y;
+    q2 = q.z;
+    q3 = q.w;
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -222,10 +181,6 @@ int Wax9::readPackets(char* buffer)
                 
                 // process packet and save it
                 mSamples->push_front(processPacket(wax9Packet));  //todo: check if we should store packet pointers in the buffer
-                
-                // update orientation for last packet
-                updateOrientation();
-                
             }
         }
         packetsRead++;
@@ -239,10 +194,30 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     Wax9Sample s;
     s.timestamp = p->timestamp;
     s.sampleNumber = p->sampleNumber;
-    s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;     // table 19
-    s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * 0.07f;          // table 20
-    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;
+    s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in g
+    s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
+    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // in μT
+    s.accLen = length(s.acc);
+    s.rot = calculateOrientation(s.acc, s.gyr, s.mag, s.timestamp);
     return s;
+}
+
+quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp)
+{
+    // set sample frequency for AHRS algorithm
+    if (!mSamples->empty()) {
+        // compare timestamp between previous sample and this one
+        uint32_t prevTimestamp = mSamples->front().timestamp;
+        uint32_t diff = timestamp - prevTimestamp;
+        float diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
+        sampleFreq = 1.0f / diffSeconds;
+    }
+    else sampleFreq = mOutputRate;
+        
+    // MadgwickAHRSupdateIMU(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z);  // without magnetometer
+    MadgwickAHRSupdate(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z, mag.x, mag.y, mag.z);    // with magnetometer
+
+    return quat((float)q0, (float)q1, (float)q2, (float)q3);
 }
 
 
@@ -480,84 +455,3 @@ const char* Wax9::timestamp(unsigned long long ticks)
     return output;
 }
 
-/* -------------------------------------------------------------------------------------------------- */
-#pragma mark IMU algorithms
-/* -------------------------------------------------------------------------------------------------- */
-
-void Wax9::updateOrientation()
-{
-    //            complementaryFilter(mSamples->front().acc, mSamples->front().gyr, &mPitch, &mRoll);
-    
-    Wax9Sample s = mSamples->front();
-//    MadgwickAHRSupdateIMU(s.gyr.x, s.gyr.y, s.gyr.z, s.acc.x, s.acc.y, s.acc.z);  // without magnetometer
-    MadgwickAHRSupdate(s.gyr.x, s.gyr.y, s.gyr.z, s.acc.x, s.acc.y, s.acc.z, s.mag.x, s.mag.y, s.mag.z);    // with magnetometer
-
-    mOrientation.w = q0;
-    mOrientation.x = q1;
-    mOrientation.y = q2;
-    mOrientation.z = q3;
-    
-}
-
-#define ACCELEROMETER_SENSITIVITY 8192.0
-#define GYROSCOPE_SENSITIVITY 65.536
-
-#define dt 0.01							// 10 ms sample rate!
-
-void Wax9::complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll)
-{
-    float pitchAcc, rollAcc;
-
-    // Integrate the gyroscope data -> int(angularSpeed) = angle
-//    *pitch += ((float)gyr.x / GYROSCOPE_SENSITIVITY) * mAccRate; // Angle around the X-axis
-//    *roll -= ((float)gyr.y / GYROSCOPE_SENSITIVITY) * mAccRate;    // Angle around the Y-axis
-
-    // its already divided
-    *pitch += gyr.x / mGyrRate; // Angle around the X-axis
-    *roll -= gyr.y / mGyrRate;    // Angle around the Y-axis
-
-    // Compensate for drift with accelerometer data if !bullshit
-    // Sensitivity = -2 to 2 G at 16Bit -> 2G = 32768 && 0.5G = 8192
-    int forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);
-    if (forceMagnitudeApprox > 8192 && forceMagnitudeApprox < 32768)
-    {
-        // Turning around the X axis results in a vector on the Y-axis
-        pitchAcc = atan2f((float)acc.y, (float)acc.z);// * 180 / M_PI;
-        *pitch = *pitch * 0.98 + pitchAcc * 0.02;
-
-        // Turning around the Y axis results in a vector on the X-axis
-        rollAcc = atan2f((float)acc.x, (float)acc.z);// * 180 / M_PI;
-        *roll = *roll * 0.98 + rollAcc * 0.02;
-    }
-}
-
-
-//#define ACCELEROMETER_SENSITIVITY 8192.0
-//#define GYROSCOPE_SENSITIVITY 65.536
-//
-//#define M_PI 3.14159265359
-//
-//#define dt 0.01							// 10 ms sample rate!
-//
-//void ComplementaryFilter(short accData[3], short gyrData[3], float *pitch, float *roll)
-//{
-//    float pitchAcc, rollAcc;
-//    
-//    // Integrate the gyroscope data -> int(angularSpeed) = angle
-//    *pitch += ((float)gyrData[0] / GYROSCOPE_SENSITIVITY) * dt; // Angle around the X-axis
-//    *roll -= ((float)gyrData[1] / GYROSCOPE_SENSITIVITY) * dt;    // Angle around the Y-axis
-//    
-//    // Compensate for drift with accelerometer data if !bullshit
-//    // Sensitivity = -2 to 2 G at 16Bit -> 2G = 32768 && 0.5G = 8192
-//    int forceMagnitudeApprox = abs(accData[0]) + abs(accData[1]) + abs(accData[2]);
-//    if (forceMagnitudeApprox > 8192 && forceMagnitudeApprox < 32768)
-//    {
-//        // Turning around the X axis results in a vector on the Y-axis
-//        pitchAcc = atan2f((float)accData[1], (float)accData[2]) * 180 / M_PI;
-//        *pitch = *pitch * 0.98 + pitchAcc * 0.02;
-//        
-//        // Turning around the Y axis results in a vector on the X-axis
-//        rollAcc = atan2f((float)accData[0], (float)accData[2]) * 180 / M_PI;
-//        *roll = *roll * 0.98 + rollAcc * 0.02;
-//    }
-//}

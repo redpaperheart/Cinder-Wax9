@@ -15,26 +15,36 @@ class Wax9SampleApp : public AppNative {
 	void setup();
 	void update();
 	void draw();
+    
+    void keyDown(KeyEvent event);
 
     float mFlash;
+    quat flatPosition;
+    CameraPersp mCam;
     Wax9 mWax9;
 };
 
 void Wax9SampleApp::setup()
 {
+    mFlash = 0.0f;
+    flatPosition = angleAxis(toRadians(90.0f), vec3(0, 0, 1));// *
+//                   angleAxis(toRadians(180.0f), vec3(0, 1, 0));
+    
     // Initialize Wax3 receiver with its port name
     // (type this in terminal to find the connected devices: ls /dev/tty.*)
     try {
         mWax9.setup("WAX9");
-        mWax9.setDebug(true);
+        mWax9.setDebug(false );
         mWax9.start();
+        mWax9.resetOrientation(flatPosition);
     }
     catch (Exception e) {
     }
     
-    mFlash = 0.0f;
+    mCam = CameraPersp(getWindowWidth(), getWindowHeight(), 45.0);
+    mCam.setEyePoint(vec3(0, 0, 100));
+    mCam.setCenterOfInterestPoint(vec3(0));
 }
-
 
 void Wax9SampleApp::update()
 {
@@ -42,12 +52,11 @@ void Wax9SampleApp::update()
     // (we only need this if we tell it to not be threaded)
     mWax9.update();
     
-//    // Process new data to detect spikes
-//    int newReadings = mAccel.getNumNewReadings();
-//    for (int i=0; i<newReadings; i++) {
-//        float acc = mAccel.getAccelMagnitude(i);
-//        if (acc > 15.0 && mFlash == 0.0f) mFlash = 1.0f;
-//    }
+    // Process new data to detect spikes
+    if (mWax9.hasReadings() && mFlash == 0 &&
+        mWax9.getAccelerationLength() > 5.0) {
+        mFlash = 1.0;
+    }
     
     if(mFlash > 0.0f) mFlash -= 0.01f;
     else mFlash = 0.0f;
@@ -73,7 +82,7 @@ void Wax9SampleApp::draw()
         green.moveTo(0, 250 - mWax9.getReading().acc.y * scaleY);
         blue.moveTo(0, 375 - mWax9.getReading().acc.z * scaleY);
 
-        for (int i=1; i<mWax9.getHistoryLength(); i++) {
+        for (int i = 1; i < mWax9.getNumReadings(); i++) {
             Wax9Sample sample = mWax9.getReading(i);
             red.lineTo(i * scaleX, 125 - sample.acc.x * scaleY);
             green.lineTo(i * scaleX, 250 - sample.acc.y * scaleY);
@@ -87,20 +96,16 @@ void Wax9SampleApp::draw()
         gl::color(0, 0, 1);
         gl::draw(blue);
         
-        // show pitch and roll extracted from acceleration
         gl::enableDepthRead();
         gl::enableDepthWrite();
         
         gl::pushMatrices();{
-            gl::setMatrices(CameraPersp(getWindowWidth(), getWindowHeight(), 45.));
-            gl::translate(getWindowCenter());
-            
-//            app::console() << "pitch: " << mWax9.getPitch() << " roll: " << mWax9.getRoll() << std::endl;
-//            gl::rotate(mWax9.getPitch(), vec3(1, 0, 0));
-//            gl::rotate(mWax9.getRoll(),  vec3(0, 0, 1));
+            gl::setMatrices(mCam);
             gl::rotate(mWax9.getOrientation());
-
-            gl::drawColorCube(vec3(0.0f), vec3(150, 50, 80));
+            gl::drawColorCube(vec3(0.0f), vec3(15, 30, 5));
+//            gl::drawStringCentered("TEST", vec2(0), ColorA::white(), Font("Arial", 14));
+            gl::drawCoordinateFrame(25.0, 2.0, 1.0);
+            
         }gl::popMatrices();
         
         gl::disableDepthRead();
@@ -108,6 +113,13 @@ void Wax9SampleApp::draw()
     }
     else {
         gl::drawStringCentered("Wax9 not found. Check Bluetooth pairing and port name", getWindowCenter());
+    }
+}
+
+void Wax9SampleApp::keyDown(KeyEvent event)
+{
+    if (event.getChar() == ' ') {
+        mWax9.resetOrientation(flatPosition);        // calibration
     }
 }
 
