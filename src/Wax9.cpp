@@ -52,13 +52,16 @@ Wax9::Wax9()
     bAccOn = true;
     bGyrOn = true;
     bMagOn = true;
-    mOutputRate = 10;
+    mOutputRate = 30;
     mAccRate = 200;
     mGyrRate = 200;
     mMagRate = 80;
     mAccRange = 8;
     mGyrRange = 2000;
     mDataMode = 1;
+    
+    mPitch = 0.0f;
+    mRoll = 0.0f;
 }
 
 Wax9::~Wax9()
@@ -139,7 +142,13 @@ bool Wax9::stop()
 int Wax9::update()
 {
     if (bConnected) {
-        return readPackets(mBuffer);
+        int r = readPackets(mBuffer);
+        
+        // update pitch roll
+//        if (mSamples->size() > 0) {
+//            updateOrientation();
+//        }
+        return r;
     }
     return 0;
 }
@@ -165,19 +174,19 @@ float Wax9::getPitch()
     }
     
     // using accelerometer + gyro
-    return 0.0;
+    return mPitch;
 }
 
 float Wax9::getRoll()
 {
     // using accelerometer
-    if (mSamples->size() > 0) {
-        vec3 acc = mSamples->front().acc;
-        return atan2(-acc.y, acc.z);
-    }
+//    if (mSamples->size() > 0) {
+//        vec3 acc = mSamples->front().acc;
+//        return atan2(-acc.y, acc.z);
+//    }
     
     // using accelerometer + gyro
-    return 0.0;
+    return mRoll;
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -186,6 +195,7 @@ float Wax9::getRoll()
 
 int Wax9::readPackets(char* buffer)
 {
+    int packetsRead = 0;
     while(mSerial.getNumBytesAvailable() > 0)
     {
         // Read data
@@ -212,11 +222,16 @@ int Wax9::readPackets(char* buffer)
                 
                 // process packet and save it
                 mSamples->push_front(processPacket(wax9Packet));  //todo: check if we should store packet pointers in the buffer
+                
+                // update orientation for last packet
+                updateOrientation();
+                
             }
         }
-        return 1;
+        packetsRead++;
     }
-    return 0;
+//    if (packetsRead > 0) app::console() << "packets read: " << packetsRead << std::endl;
+    return packetsRead;
 }
 
 Wax9Sample Wax9::processPacket(Wax9Packet *p)
@@ -464,6 +479,58 @@ const char* Wax9::timestamp(unsigned long long ticks)
     
     return output;
 }
+
+/* -------------------------------------------------------------------------------------------------- */
+#pragma mark IMU algorithms
+/* -------------------------------------------------------------------------------------------------- */
+
+void Wax9::updateOrientation()
+{
+    //            complementaryFilter(mSamples->front().acc, mSamples->front().gyr, &mPitch, &mRoll);
+    
+    Wax9Sample s = mSamples->front();
+//    MadgwickAHRSupdateIMU(s.gyr.x, s.gyr.y, s.gyr.z, s.acc.x, s.acc.y, s.acc.z);  // without magnetometer
+    MadgwickAHRSupdate(s.gyr.x, s.gyr.y, s.gyr.z, s.acc.x, s.acc.y, s.acc.z, s.mag.x, s.mag.y, s.mag.z);    // with magnetometer
+
+    mOrientation.w = q0;
+    mOrientation.x = q1;
+    mOrientation.y = q2;
+    mOrientation.z = q3;
+    
+}
+
+#define ACCELEROMETER_SENSITIVITY 8192.0
+#define GYROSCOPE_SENSITIVITY 65.536
+
+#define dt 0.01							// 10 ms sample rate!
+
+void Wax9::complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll)
+{
+    float pitchAcc, rollAcc;
+
+    // Integrate the gyroscope data -> int(angularSpeed) = angle
+//    *pitch += ((float)gyr.x / GYROSCOPE_SENSITIVITY) * mAccRate; // Angle around the X-axis
+//    *roll -= ((float)gyr.y / GYROSCOPE_SENSITIVITY) * mAccRate;    // Angle around the Y-axis
+
+    // its already divided
+    *pitch += gyr.x / mGyrRate; // Angle around the X-axis
+    *roll -= gyr.y / mGyrRate;    // Angle around the Y-axis
+
+    // Compensate for drift with accelerometer data if !bullshit
+    // Sensitivity = -2 to 2 G at 16Bit -> 2G = 32768 && 0.5G = 8192
+    int forceMagnitudeApprox = abs(acc.x) + abs(acc.y) + abs(acc.z);
+    if (forceMagnitudeApprox > 8192 && forceMagnitudeApprox < 32768)
+    {
+        // Turning around the X axis results in a vector on the Y-axis
+        pitchAcc = atan2f((float)acc.y, (float)acc.z);// * 180 / M_PI;
+        *pitch = *pitch * 0.98 + pitchAcc * 0.02;
+
+        // Turning around the Y axis results in a vector on the X-axis
+        rollAcc = atan2f((float)acc.x, (float)acc.z);// * 180 / M_PI;
+        *roll = *roll * 0.98 + rollAcc * 0.02;
+    }
+}
+
 
 //#define ACCELEROMETER_SENSITIVITY 8192.0
 //#define GYROSCOPE_SENSITIVITY 65.536

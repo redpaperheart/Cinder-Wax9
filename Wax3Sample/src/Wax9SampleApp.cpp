@@ -26,7 +26,7 @@ void Wax9SampleApp::setup()
     // (type this in terminal to find the connected devices: ls /dev/tty.*)
     try {
         mWax9.setup("WAX9");
-        mWax9.setDebug(false);
+        mWax9.setDebug(true);
         mWax9.start();
     }
     catch (Exception e) {
@@ -94,8 +94,12 @@ void Wax9SampleApp::draw()
         gl::pushMatrices();{
             gl::setMatrices(CameraPersp(getWindowWidth(), getWindowHeight(), 45.));
             gl::translate(getWindowCenter());
-            gl::rotate(mWax9.getPitch(), vec3(1, 0, 0));
-            gl::rotate(mWax9.getRoll(),  vec3(0, 0, 1));
+            
+//            app::console() << "pitch: " << mWax9.getPitch() << " roll: " << mWax9.getRoll() << std::endl;
+//            gl::rotate(mWax9.getPitch(), vec3(1, 0, 0));
+//            gl::rotate(mWax9.getRoll(),  vec3(0, 0, 1));
+            gl::rotate(mWax9.getOrientation());
+
             gl::drawColorCube(vec3(0.0f), vec3(150, 50, 80));
         }gl::popMatrices();
         

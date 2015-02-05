@@ -94,6 +94,12 @@ typedef struct
 
 typedef  boost::circular_buffer<Wax9Sample> SampleBuffer;
 
+// Declare variables and functions form C file
+extern "C" volatile float beta;				// algorithm gain
+extern "C" volatile float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
+extern "C" void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
+extern "C" void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az);
+
 class Wax9 {
 public:
     Wax9();
@@ -132,11 +138,13 @@ public:
     Wax9Sample   getReading(int i)                  { return mSamples->at(i); }
     SampleBuffer* getReadings()                     { return mSamples; }
     
-    float       getPitch(); // rotation in x axis in degrees
-    float       getRoll(); // rotation in z axis in degrees
+    quat        getOrientation()                    { return mOrientation; }
     
+    float       getPitch(); // rotation in x axis in rad
+    float       getRoll(); // rotation in z axis in rad
+    vec2        getPitchRoll();
     
-private:
+protected:
     
     // packet parsing
     int                 readPackets(char *inBuffer);
@@ -144,11 +152,16 @@ private:
     size_t              lineread(void *inBuffer, size_t len);
     Wax9Packet*         parseWax9Packet(const void *inputBuffer, size_t len, unsigned long long now);
     Wax9Sample          processPacket(Wax9Packet *packet);
+    void                updateOrientation();
     
     // utils
     void                printWax9(Wax9Packet *waxPacket);
     const char*         timestamp(unsigned long long ticks);
     unsigned long long  ticksNow();
+    
+    // imu algorithms
+    void complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll);
+
     
     // state
     bool                bConnected;
@@ -174,7 +187,9 @@ private:
     int                 mDataMode;
     
     // data
+    quat                mOrientation;
     char                mBuffer[BUFFER_SIZE];   // send back to class
+    float               mPitch, mRoll;
     vec3                mMaxAccel;
     Serial              mSerial;
     SampleBuffer*       mSamples;
