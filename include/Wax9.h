@@ -100,7 +100,7 @@ public:
     Wax9();
     ~Wax9();
     
-    bool        setup(string portName, int historyLength = 400);
+    bool        setup(string portName, int historyLength = 300);
     bool        start();
     bool        stop();
     int         update();  // only call if we don't want it threaded
@@ -114,8 +114,9 @@ public:
     
     bool        hasReadings()                       { return !mSamples->empty(); }
     bool        hasNewReadings()                    { return mNewReadings > 0; }    // not used yet
-    int         getNumNewReadings()                 { return mNewReadings; }        // not used yet
+    int         getNumNewReadings()                 { return min(mNewReadings, getNumReadings()); }        // not used yet
     int         getNumReadings()                    { return mSamples->size(); }
+    void        markAsRead()                        { mNewReadings = 0; }
     
     Wax9Sample   getReading()                       { return mSamples->front(); }
     Wax9Sample   getReading(int i)                  { return mSamples->at(i); }
@@ -142,7 +143,7 @@ protected:
     
     // imu algorithms
     void complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll);
-
+    
     // state
     bool                bConnected;
     bool                bDebug;

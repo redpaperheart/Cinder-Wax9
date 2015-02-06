@@ -68,6 +68,11 @@ bool Wax9::setup(string portName, int historyLength)
     mHistoryLength = historyLength;
     mSamples = new SampleBuffer(mHistoryLength);
     
+    assert(mSamples->capacity() == mHistoryLength);
+    // Check is empty.
+    assert(mSamples->size() == 0);
+    assert(mSamples->empty());
+    
     app::console() << "Available serial ports: " << std::endl;
     for( auto device : Serial::getDevices()) app::console() << device.getName() << ", " << device.getPath() << std::endl;
     
@@ -89,7 +94,7 @@ bool Wax9::setup(string portName, int historyLength)
 bool Wax9::start()
 {
     if (bConnected) {
-
+        
         // construct settings string - we're not using range, just leaving defaults
         std::string settings = "\r\n";
         settings += "RATE X 1 " + toString(mOutputRate) + "\r\n";                       // output rate in Hz (table 7 in dev guide)
@@ -123,7 +128,7 @@ bool Wax9::stop()
     }
     bConnected = false;
     bEnabled = false;
-
+    
     return true;
 }
 
@@ -134,10 +139,9 @@ bool Wax9::stop()
 int Wax9::update()
 {
     if (bConnected) {
-        int r = readPackets(mBuffer);
-        return r;
+        mNewReadings += readPackets(mBuffer);
     }
-    return 0;
+    return getNumNewReadings();
 }
 
 void Wax9::resetOrientation(quat q)
@@ -164,7 +168,7 @@ int Wax9::readPackets(char* buffer)
         {
             bytesRead = slipread(buffer, BUFFER_SIZE);
         }
-        if (bytesRead == 0) { return -1; }
+        if (bytesRead == 0) { return 0; }
         
         
         // Get time now
@@ -181,11 +185,11 @@ int Wax9::readPackets(char* buffer)
                 
                 // process packet and save it
                 mSamples->push_front(processPacket(wax9Packet));  //todo: check if we should store packet pointers in the buffer
+                packetsRead++;
             }
         }
-        packetsRead++;
     }
-//    if (packetsRead > 0) app::console() << "packets read: " << packetsRead << std::endl;
+    //    if (packetsRead > 0) app::console() << "packets read: " << packetsRead << std::endl;
     return packetsRead;
 }
 
@@ -213,10 +217,10 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
         sampleFreq = 1.0f / diffSeconds;
     }
     else sampleFreq = mOutputRate;
-        
+    
     // MadgwickAHRSupdateIMU(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z);  // without magnetometer
     MadgwickAHRSupdate(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z, mag.x, mag.y, mag.z);    // with magnetometer
-
+    
     return quat((float)q0, (float)q1, (float)q2, (float)q3);
 }
 
@@ -240,7 +244,7 @@ size_t Wax9::lineread(void *inBuffer, size_t len)
     if (inBuffer == NULL) { return 0; }
     *p = '\0';
     
-//    while(!bCloseThread)
+    //    while(!bCloseThread)
     while(bEnabled)
     {
         c = '\0';
@@ -420,13 +424,13 @@ Wax9Packet* Wax9::parseWax9Packet(const void *inputBuffer, size_t len, unsigned 
 void Wax9::printWax9(Wax9Packet *wax9Packet)
 {
     printf( "\nWAX9\ntimestring:\t%s\ntimestamp:\t%f\npacket num:\t%u\naccel\t[%f %f %f]\ngyro\t[%f %f %f]\nmagnet\t[%f %f %f]\n",
-            timestamp(wax9Packet->timestamp),
-            wax9Packet->timestamp / 65536.0,
-            wax9Packet->sampleNumber,
-            wax9Packet->accel.x / 4096.0f, wax9Packet->accel.y / 4096.0f, wax9Packet->accel.z / 4096.0f,	// 'G' (9.81 m/s/s)
-            wax9Packet->gyro.x * 0.07f,    wax9Packet->gyro.y * 0.07f,    wax9Packet->gyro.z * 0.07f,		// degrees/sec
-            wax9Packet->mag.x * 0.10f, wax9Packet->mag.y * 0.10f, wax9Packet->mag.z * 0.10f * -1			// uT (magnetic field ranges between 25-65 uT)
-            );
+           timestamp(wax9Packet->timestamp),
+           wax9Packet->timestamp / 65536.0,
+           wax9Packet->sampleNumber,
+           wax9Packet->accel.x / 4096.0f, wax9Packet->accel.y / 4096.0f, wax9Packet->accel.z / 4096.0f,	// 'G' (9.81 m/s/s)
+           wax9Packet->gyro.x * 0.07f,    wax9Packet->gyro.y * 0.07f,    wax9Packet->gyro.z * 0.07f,		// degrees/sec
+           wax9Packet->mag.x * 0.10f, wax9Packet->mag.y * 0.10f, wax9Packet->mag.z * 0.10f * -1			// uT (magnetic field ranges between 25-65 uT)
+           );
 }
 
 /* Returns the number of milliseconds since the epoch */
