@@ -146,10 +146,17 @@ int Wax9::update()
 
 void Wax9::resetOrientation(quat q)
 {
-    q0 = q.x;
-    q1 = q.y;
-    q2 = q.z;
-    q3 = q.w;
+    // this is right but there's some other problem in the block
+    q0 = q.w;
+    q1 = q.x;
+    q2 = q.y;
+    q3 = q.z;
+    
+    // this is not right but kinda worked for the demo
+//    q0 = q.x;
+//    q1 = q.y;
+//    q2 = q.z;
+//    q3 = q.w;
 }
 
 /* -------------------------------------------------------------------------------------------------- */
