@@ -12,9 +12,9 @@
 		00B784B40FF439BC000DE1D7 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B00FF439BC000DE1D7 /* AudioToolbox.framework */; };
 		00B784B50FF439BC000DE1D7 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B10FF439BC000DE1D7 /* AudioUnit.framework */; };
 		00B784B60FF439BC000DE1D7 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B20FF439BC000DE1D7 /* CoreAudio.framework */; };
+		204A8D431AA8C5C7004FF985 /* ahrs.c in Sources */ = {isa = PBXBuildFile; fileRef = 204A8D421AA8C5C7004FF985 /* ahrs.c */; };
 		209C58701A804D8900BE7214 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 209C586F1A804D8900BE7214 /* AVFoundation.framework */; };
 		209C58721A804DB200BE7214 /* CoreMedia.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 209C58711A804DB200BE7214 /* CoreMedia.framework */; };
-		209C58781A82C7F400BE7214 /* MadgwickAHRS.c in Sources */ = {isa = PBXBuildFile; fileRef = 209C58771A82C7F400BE7214 /* MadgwickAHRS.c */; };
 		5323E6B20EAFCA74003A9687 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B10EAFCA74003A9687 /* CoreVideo.framework */; };
 		5323E6B60EAFCA7E003A9687 /* QTKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5323E6B50EAFCA7E003A9687 /* QTKit.framework */; };
 		55AB1C07E260439A80D961D2 /* CinderApp.icns in Resources */ = {isa = PBXBuildFile; fileRef = 6654307630FE46E296CCF56E /* CinderApp.icns */; };
@@ -31,10 +31,10 @@
 		00B784B20FF439BC000DE1D7 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		085F77F9DED94E3DBFE23C0C /* Wax9Sample_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Wax9Sample_Prefix.pch; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		204A8D411AA8C5BD004FF985 /* ahrs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ahrs.h; sourceTree = "<group>"; };
+		204A8D421AA8C5C7004FF985 /* ahrs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ahrs.c; sourceTree = "<group>"; };
 		209C586F1A804D8900BE7214 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		209C58711A804DB200BE7214 /* CoreMedia.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMedia.framework; path = System/Library/Frameworks/CoreMedia.framework; sourceTree = SDKROOT; };
-		209C58771A82C7F400BE7214 /* MadgwickAHRS.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = MadgwickAHRS.c; sourceTree = "<group>"; };
-		209C58791A82C80200BE7214 /* MadgwickAHRS.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 4; path = MadgwickAHRS.h; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
 		43CB26D2759F4F84AE303F6D /* Wax9SampleApp.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = Wax9SampleApp.cpp; path = ../src/Wax9SampleApp.cpp; sourceTree = "<group>"; };
@@ -164,7 +164,7 @@
 		60C335A0182419FA00C062E1 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				209C58791A82C80200BE7214 /* MadgwickAHRS.h */,
+				204A8D411AA8C5BD004FF985 /* ahrs.h */,
 				60C335A3182419FA00C062E1 /* Wax9.h */,
 			);
 			path = include;
@@ -173,7 +173,7 @@
 		60C335A5182419FA00C062E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
-				209C58771A82C7F400BE7214 /* MadgwickAHRS.c */,
+				204A8D421AA8C5C7004FF985 /* ahrs.c */,
 				60C335A7182419FA00C062E1 /* Wax9.cpp */,
 			);
 			path = src;
@@ -243,8 +243,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				C2E78E8121C54FA894ED3BBC /* Wax9SampleApp.cpp in Sources */,
+				204A8D431AA8C5C7004FF985 /* ahrs.c in Sources */,
 				60C335D3182419FA00C062E1 /* Wax9.cpp in Sources */,
-				209C58781A82C7F400BE7214 /* MadgwickAHRS.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

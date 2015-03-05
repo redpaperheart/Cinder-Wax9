@@ -59,7 +59,7 @@ Wax9::Wax9()
 
 Wax9::~Wax9()
 {
-    stop();
+//    stop();
 }
 
 bool Wax9::setup(string portName, int historyLength)
@@ -68,24 +68,21 @@ bool Wax9::setup(string portName, int historyLength)
     mHistoryLength = historyLength;
     mSamples = new SampleBuffer(mHistoryLength);
     
-    assert(mSamples->capacity() == mHistoryLength);
-    // Check is empty.
-    assert(mSamples->size() == 0);
-    assert(mSamples->empty());
-    
     app::console() << "Available serial ports: " << std::endl;
     for( auto device : Serial::getDevices()) app::console() << device.getName() << ", " << device.getPath() << std::endl;
     
     try {
         Serial::Device device = Serial::findDeviceByNameContains(portName);
         mSerial = Serial(device, 115200);
-        app::console() << "Receiver sucessfully connected to " << portName << std::endl;
+        app::console() << "Receiver sucessfully connected to " << device.getName() << std::endl;
     }
     catch(SerialExc e) {
         app::console() << "Receiver unable to connect to " << portName << ": " << e.what() << std::endl;
         bConnected = false;
         return false;
     }
+    
+    AhrsInit(&mAhrs, 0, mOutputRate, 0.1f);
     
     bConnected = true;
     return true;
@@ -94,7 +91,7 @@ bool Wax9::setup(string portName, int historyLength)
 bool Wax9::start()
 {
     if (bConnected) {
-        
+
         // construct settings string - we're not using range, just leaving defaults
         std::string settings = "\r\n";
         settings += "RATE X 1 " + toString(mOutputRate) + "\r\n";                       // output rate in Hz (table 7 in dev guide)
@@ -123,12 +120,12 @@ bool Wax9::stop()
 {
     // send termination string (this disconnects the device)
     if (bConnected) {
-        mSerial.writeString("\\r\nRESET\r\n");
-        app::console() << "Resetting and disconnecting WAX9" << std::endl;
+//        mSerial.writeString("\\r\nRESET\r\n");
+//        app::console() << "Resetting and disconnecting WAX9" << std::endl;
     }
     bConnected = false;
     bEnabled = false;
-    
+
     return true;
 }
 
@@ -140,23 +137,19 @@ int Wax9::update()
 {
     if (bConnected) {
         mNewReadings += readPackets(mBuffer);
+        
+        // If first run - not sure if this does anything
+        if (mNewReadings > 0 && getNumReadings() == 0) {
+            calculateOrientation(vec3(0), vec3(0), vec3(0), 0);
+        }
     }
     return getNumNewReadings();
 }
 
 void Wax9::resetOrientation(quat q)
 {
-    // this is right but there's some other problem in the block
-    q0 = q.w;
-    q1 = q.x;
-    q2 = q.y;
-    q3 = q.z;
-    
-    // this is not right but kinda worked for the demo
-//    q0 = q.x;
-//    q1 = q.y;
-//    q2 = q.z;
-//    q3 = q.w;
+    float quat[4] = {q.w, q.x, q.y, q.z};
+    AhrsReset(&mAhrs, quat);
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -196,7 +189,7 @@ int Wax9::readPackets(char* buffer)
             }
         }
     }
-    //    if (packetsRead > 0) app::console() << "packets read: " << packetsRead << std::endl;
+//    if (packetsRead > 0) app::console() << "packets read: " << packetsRead << std::endl;
     return packetsRead;
 }
 
@@ -209,26 +202,30 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
     s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // in μT
     s.accLen = length(s.acc);
-    s.rot = calculateOrientation(s.acc, s.gyr, s.mag, s.timestamp);
+    s.rotAHRS = calculateOrientation(s.acc, s.gyr, s.mag, s.timestamp);
+    s.rotOGL = AHRStoOpenGL(s.rotAHRS);
     return s;
 }
 
 quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp)
 {
     // set sample frequency for AHRS algorithm
-    if (!mSamples->empty()) {
-        // compare timestamp between previous sample and this one
-        uint32_t prevTimestamp = mSamples->front().timestamp;
-        uint32_t diff = timestamp - prevTimestamp;
-        float diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
-        sampleFreq = 1.0f / diffSeconds;
-    }
-    else sampleFreq = mOutputRate;
+//    if (!mSamples->empty()) {
+//        // compare timestamp between previous sample and this one
+//        uint32_t prevTimestamp = mSamples->front().timestamp;
+//        uint32_t diff = timestamp - prevTimestamp;
+//        float diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
+//        mAhrs.sampleFreq = 1.0f / diffSeconds;
+//    }
+//    else mAhrs.sampleFreq = mOutputRate;
     
-    // MadgwickAHRSupdateIMU(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z);  // without magnetometer
-    MadgwickAHRSupdate(gyr.x, gyr.y, gyr.z, acc.x, acc.y, acc.z, mag.x, mag.y, mag.z);    // with magnetometer
+    // Call AHRS algorithm update
+    // we're not using the accelerometer yet
+    float gyro[3]   = {gyr.x, gyr.y, gyr.z};
+    float accel[3]  = {acc.x, acc.y, acc.z};
+    AhrsUpdate(&mAhrs, gyro, accel, NULL);
     
-    return quat((float)q0, (float)q1, (float)q2, (float)q3);
+    return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
 }
 
 
@@ -251,7 +248,7 @@ size_t Wax9::lineread(void *inBuffer, size_t len)
     if (inBuffer == NULL) { return 0; }
     *p = '\0';
     
-    //    while(!bCloseThread)
+//    while(!bCloseThread)
     while(bEnabled)
     {
         c = '\0';
@@ -431,13 +428,13 @@ Wax9Packet* Wax9::parseWax9Packet(const void *inputBuffer, size_t len, unsigned 
 void Wax9::printWax9(Wax9Packet *wax9Packet)
 {
     printf( "\nWAX9\ntimestring:\t%s\ntimestamp:\t%f\npacket num:\t%u\naccel\t[%f %f %f]\ngyro\t[%f %f %f]\nmagnet\t[%f %f %f]\n",
-           timestamp(wax9Packet->timestamp),
-           wax9Packet->timestamp / 65536.0,
-           wax9Packet->sampleNumber,
-           wax9Packet->accel.x / 4096.0f, wax9Packet->accel.y / 4096.0f, wax9Packet->accel.z / 4096.0f,	// 'G' (9.81 m/s/s)
-           wax9Packet->gyro.x * 0.07f,    wax9Packet->gyro.y * 0.07f,    wax9Packet->gyro.z * 0.07f,		// degrees/sec
-           wax9Packet->mag.x * 0.10f, wax9Packet->mag.y * 0.10f, wax9Packet->mag.z * 0.10f * -1			// uT (magnetic field ranges between 25-65 uT)
-           );
+            timestamp(wax9Packet->timestamp),
+            wax9Packet->timestamp / 65536.0,
+            wax9Packet->sampleNumber,
+            wax9Packet->accel.x / 4096.0f, wax9Packet->accel.y / 4096.0f, wax9Packet->accel.z / 4096.0f,	// 'G' (9.81 m/s/s)
+            wax9Packet->gyro.x * 0.07f,    wax9Packet->gyro.y * 0.07f,    wax9Packet->gyro.z * 0.07f,		// degrees/sec
+            wax9Packet->mag.x * 0.10f, wax9Packet->mag.y * 0.10f, wax9Packet->mag.z * 0.10f * -1			// uT (magnetic field ranges between 25-65 uT)
+            );
 }
 
 /* Returns the number of milliseconds since the epoch */
@@ -464,5 +461,31 @@ const char* Wax9::timestamp(unsigned long long ticks)
     sprintf(output + strlen(output), "%04d-%02d-%02d %02d:%02d:%02d.%03d", 1900 + today->tm_year, today->tm_mon + 1, today->tm_mday, today->tm_hour, today->tm_min, today->tm_sec, tp.millitm);
     
     return output;
+}
+
+// Gets the Euler angles in radians defined with the Aerospace sequence (psi, theta, phi).
+// See Sebastian O.H. Madwick report "An efficient orientation filter for inertial
+// and inertial/magnetic sensor arrays" Chapter 2 Quaternion representation
+
+vec3 Wax9::QuaternionToEuler(const quat &q)
+{
+    return vec3( (float)atan2(2 * q.x * q.y - 2 * q.w * q.z, 2 * q.w*q.w + 2 * q.x * q.x - 1),      // psi
+                -(float)asin(2 * q.x * q.z + 2 * q.w * q.y),                                        // theta
+                 (float)atan2(2 * q.y * q.z - 2 * q.w * q.x, 2 * q.w * q.w + 2 * q.z * q.z - 1) );  // phi
+
+}
+
+// Conversion between coordinate systems
+// order as in: http://www.varesano.net/blog/fabio/ahrs-sensor-fusion-orientation-filter-3d-graphical-rotating-cube
+
+quat Wax9::AHRStoOpenGL(const quat &q)
+{
+    vec3 eul = QuaternionToEuler(q);
+    
+    mat4 sensorRotMat = glm::rotate(-eul.z, vec3(0, 0, 1));	// Z: phi (roll)
+    sensorRotMat *= glm::rotate(-eul.y, vec3(1, 0, 0));        // X: theta (pitch)
+    sensorRotMat *= glm::rotate(-eul.x, vec3(0, 1, 0));        // Y: psi (yaw)
+    
+    return quat(sensorRotMat);
 }
 

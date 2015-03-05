@@ -48,13 +48,15 @@
 #include <boost/circular_buffer.hpp>
 #include <sys/timeb.h>
 
+#include "ahrs.h"
+
 // Wax Structures
 #define BUFFER_SIZE 0xffff
 
 using namespace std;
 using namespace ci;
 
-// 9-axis packet type (always little-endian, transmitted SLIP-encoded)
+// Raw 9-axis packet type (always little-endian, transmitted SLIP-encoded)
 typedef struct
 {
     // Standard part (26-bytes)
@@ -74,36 +76,31 @@ typedef struct
     //                                      // @36
 } Wax9Packet;
 
-// Processed Wax9 packet
+// Processed Wax9 sample
 typedef struct
 {
     unsigned short sampleNumber;
     uint32_t timestamp;
+    float accLen;
     vec3 acc;
     vec3 gyr;
     vec3 mag;
-    float accLen;
-    quat rot;
+    quat rotAHRS;   // original quaternion in the coordinate system of the AHRS algorithm
+    quat rotOGL;    // quaternion transformed to the OpenGL coordinate system
 } Wax9Sample;
 
 typedef  boost::circular_buffer<Wax9Sample> SampleBuffer;
 
-// Declare variables and functions form C file
-extern "C" volatile float sampleFreq;
-extern "C" volatile float beta;				// algorithm gain
-extern "C" volatile float q0, q1, q2, q3;	// quaternion of sensor frame relative to auxiliary frame
-extern "C" void MadgwickAHRSupdate(float gx, float gy, float gz, float ax, float ay, float az, float mx, float my, float mz);
-extern "C" void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az);
-
 class Wax9 {
 public:
+    
     Wax9();
     ~Wax9();
     
     bool        setup(string portName, int historyLength = 300);
     bool        start();
     bool        stop();
-    int         update();  // only call if we don't want it threaded
+    int         update();
     
     void        resetOrientation(quat q = quat());
     void        setDebug(bool b)                    { bDebug = b; }
@@ -118,13 +115,16 @@ public:
     int         getNumReadings()                    { return mSamples->size(); }
     void        markAsRead()                        { mNewReadings = 0; }
     
-    Wax9Sample   getReading()                       { return mSamples->front(); }
-    Wax9Sample   getReading(int i)                  { return mSamples->at(i); }
-    SampleBuffer* getReadings()                     { return mSamples; }
+    Wax9Sample      getReading()                    { return mSamples->front(); }
+    Wax9Sample      getReading(int i)               { return mSamples->at(i); }
+    SampleBuffer*   getReadings()                   { return mSamples; }
     
-    quat        getOrientation()                    { return getReading().rot; }
+    quat        getOrientation(bool AHRS = false)   { return AHRS ? getReading().rotAHRS : getReading().rotOGL; }
     vec3        getAcceleration()                   { return getReading().acc; }
     float       getAccelerationLength()             { return getReading().accLen; }
+    
+    static vec3 QuaternionToEuler(const quat &q);
+    static quat AHRStoOpenGL(const quat &q);
     
 protected:
     
@@ -140,9 +140,6 @@ protected:
     void                printWax9(Wax9Packet *waxPacket);
     const char*         timestamp(unsigned long long ticks);
     unsigned long long  ticksNow();
-    
-    // imu algorithms
-    void complementaryFilter(vec3 acc, vec3 gyr, float *pitch, float *roll);
     
     // state
     bool                bConnected;
@@ -166,8 +163,9 @@ protected:
     int                 mDataMode;
     
     // data
-    char                mBuffer[BUFFER_SIZE];   // send back to class
+    char                mBuffer[BUFFER_SIZE];
     Serial              mSerial;
     SampleBuffer*       mSamples;
+    ahrs_struct_t       mAhrs;      // interface with AHRS algorithm
 };
 
