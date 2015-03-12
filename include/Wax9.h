@@ -123,8 +123,11 @@ public:
     vec3        getAcceleration()                   { return getReading().acc; }
     float       getAccelerationLength()             { return getReading().accLen; }
     
-    void        setGyroDelta(vec3 delta){ mGyroDelta = delta; }
-    vec3        getGyroDelta(){ return mGyroDelta; }
+    bool            isBatteryLow()                  { return bBatteryLow; }
+    unsigned short  getBattery()                    { return mBattery; }
+    
+    void        setGyroDelta(vec3 delta)            { mGyroDelta = delta; }
+    vec3        getGyroDelta()                      { return mGyroDelta; }
     
     static vec3 QuaternionToEuler(const quat &q);
     static quat AHRStoOpenGL(const quat &q);
