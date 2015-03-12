@@ -44,6 +44,11 @@ Wax9::Wax9()
     mNewReadings = 0;
     mHistoryLength = 120;
     
+    bBatteryLow = false;
+    mBattery = 0xffff;
+    mPressure = 0xfffffffful;
+    mTemperature = 0xffff;
+    
     // device settings
     bAccOn = true;
     bGyrOn = true;
@@ -206,6 +211,22 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.accLen = length(s.acc);
     s.rotAHRS = calculateOrientation(s.acc, s.gyr - mGyroDelta , s.mag, s.timestamp);
     s.rotOGL = AHRStoOpenGL(s.rotAHRS);
+    
+    // the sensor metadata only comes in every once in a while
+    if (p->temperature != -1) {
+        mTemperature = (float)p->temperature * 0.1f;
+        if (bDebug) app::console() << "WAX9 - temperature: " << mTemperature << " celsius/n";
+    }
+    if (p->pressure != 0xfffffffful) {
+        mPressure = p->pressure;
+        if (bDebug)app::console() << "WAX9 - pressure: " << mPressure << " pascals/n";
+    }
+    if (p->battery != 0xffff){
+        mBattery = p->battery;
+        bBatteryLow = p->battery < 3500;   // according to dev guide, battery dies under 3300 mV
+        if (bDebug)app::console() << "WAX9 - Battery: " << p->battery << " millivolts/n";
+    }
+    
     return s;
 }
 
