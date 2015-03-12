@@ -55,6 +55,8 @@ Wax9::Wax9()
     mAccRange = 8;
     mGyrRange = 2000;
     mDataMode = 1;
+    
+    mGyroDelta = vec3(0);
 }
 
 Wax9::~Wax9()
@@ -202,7 +204,7 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
     s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // in μT
     s.accLen = length(s.acc);
-    s.rotAHRS = calculateOrientation(s.acc, s.gyr, s.mag, s.timestamp);
+    s.rotAHRS = calculateOrientation(s.acc, s.gyr - mGyroDelta , s.mag, s.timestamp);
     s.rotOGL = AHRStoOpenGL(s.rotAHRS);
     return s;
 }

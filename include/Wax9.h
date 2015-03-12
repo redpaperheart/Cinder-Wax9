@@ -123,6 +123,9 @@ public:
     vec3        getAcceleration()                   { return getReading().acc; }
     float       getAccelerationLength()             { return getReading().accLen; }
     
+    void        setGyroDelta(vec3 delta){ mGyroDelta = delta; }
+    vec3        getGyroDelta(){ return mGyroDelta; }
+    
     static vec3 QuaternionToEuler(const quat &q);
     static quat AHRStoOpenGL(const quat &q);
     
@@ -161,6 +164,8 @@ protected:
     int                 mAccRange;
     int                 mGyrRange;
     int                 mDataMode;
+    
+    vec3                mGyroDelta;
     
     // data
     char                mBuffer[BUFFER_SIZE];
