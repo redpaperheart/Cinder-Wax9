@@ -155,8 +155,10 @@ int Wax9::update()
         int numNewReadings = getNumNewReadings();
     
         // make sure we're not disconnected
-        if (numNewReadings > 0) mLastReadingTime = app::getElapsedSeconds();
-        else if ((app::getElapsedSeconds() - mLastReadingTime) > mTimeout) bConnected = false;
+        if (numNewReadings > 0)
+            mLastReadingTime = app::getElapsedSeconds();
+        else if (getNumReadings() > 0 && ((app::getElapsedSeconds() - mLastReadingTime) > mTimeout))
+            bConnected = false;
         
         return numNewReadings;
     }
