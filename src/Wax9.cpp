@@ -43,8 +43,8 @@ Wax9::Wax9()
     mSmoothFactor = 0.8;
     mNewReadings = 0;
     mHistoryLength = 120;
-    mLastReadingTime = 0;
     mTimeout = 5.0f;
+    mLastReadingTime = std::numeric_limits<float>::infinity();
     
     bBatteryLow = false;
     mBattery = 0xffff;
