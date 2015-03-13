@@ -155,6 +155,8 @@ protected:
     int                 mNewReadings;
     int                 mHistoryLength;
     float               mSmoothFactor;
+    float               mLastReadingTime;
+    float               mTimeout;
     
     // device settings to construct init string
     bool                bAccOn;

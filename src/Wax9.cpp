@@ -43,6 +43,8 @@ Wax9::Wax9()
     mSmoothFactor = 0.8;
     mNewReadings = 0;
     mHistoryLength = 120;
+    mLastReadingTime = 0;
+    mTimeout = 5.0f;
     
     bBatteryLow = false;
     mBattery = 0xffff;
@@ -143,14 +145,22 @@ bool Wax9::stop()
 int Wax9::update()
 {
     if (bConnected) {
-        mNewReadings += readPackets(mBuffer);
-        
+        mNewReadings = readPackets(mBuffer);
+
         // If first run - not sure if this does anything
         if (mNewReadings > 0 && getNumReadings() == 0) {
             calculateOrientation(vec3(0), vec3(0), vec3(0), 0);
         }
+        
+        int numNewReadings = getNumNewReadings();
+    
+        // make sure we're not disconnected
+        if (numNewReadings > 0) mLastReadingTime = app::getElapsedSeconds();
+        else if ((app::getElapsedSeconds() - mLastReadingTime) > mTimeout) bConnected = false;
+        
+        return numNewReadings;
     }
-    return getNumNewReadings();
+    return 0;
 }
 
 void Wax9::resetOrientation(quat q)
