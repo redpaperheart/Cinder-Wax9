@@ -165,7 +165,7 @@ int Wax9::update()
     return 0;
 }
 
-void Wax9::resetOrientation(quat q)
+void Wax9::resetOrientation(glm::quat q)
 {
     float quat[4] = {q.w, q.x, q.y, q.z};
     AhrsReset(&mAhrs, quat);
@@ -242,7 +242,7 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     return s;
 }
 
-quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp)
+glm::quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp)
 {
     // set sample frequency for AHRS algorithm
 //    if (!mSamples->empty()) {
@@ -260,7 +260,7 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     float accel[3]  = {acc.x, acc.y, acc.z};
     AhrsUpdate(&mAhrs, gyro, accel, NULL);
     
-    return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
+    return glm::quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
 }
 
 
@@ -502,7 +502,7 @@ const char* Wax9::timestamp(unsigned long long ticks)
 // See Sebastian O.H. Madwick report "An efficient orientation filter for inertial
 // and inertial/magnetic sensor arrays" Chapter 2 Quaternion representation
 
-vec3 Wax9::QuaternionToEuler(const quat &q)
+vec3 Wax9::QuaternionToEuler(const glm::quat &q)
 {
     return vec3( (float)atan2(2 * q.x * q.y - 2 * q.w * q.z, 2 * q.w*q.w + 2 * q.x * q.x - 1),      // psi
                 -(float)asin(2 * q.x * q.z + 2 * q.w * q.y),                                        // theta
@@ -513,7 +513,7 @@ vec3 Wax9::QuaternionToEuler(const quat &q)
 // Conversion between coordinate systems
 // order as in: http://www.varesano.net/blog/fabio/ahrs-sensor-fusion-orientation-filter-3d-graphical-rotating-cube
 
-quat Wax9::AHRStoOpenGL(const quat &q)
+glm::quat Wax9::AHRStoOpenGL(const glm::quat &q)
 {
     vec3 eul = QuaternionToEuler(q);
     
@@ -521,6 +521,6 @@ quat Wax9::AHRStoOpenGL(const quat &q)
     sensorRotMat *= glm::rotate(-eul.y, vec3(1, 0, 0));         // X: theta (pitch)
     sensorRotMat *= glm::rotate(-eul.x, vec3(0, 1, 0));         // Y: psi (yaw)
     
-    return quat(sensorRotMat);
+    return glm::quat(sensorRotMat);
 }
 
