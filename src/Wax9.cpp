@@ -43,8 +43,8 @@ Wax9::Wax9()
     mSmoothFactor = 0.8;
     mNewReadings = 0;
     mHistoryLength = 120;
-    mLastReadingTime = 0;
     mTimeout = 5.0f;
+    mLastReadingTime = std::numeric_limits<float>::infinity();
     
     bBatteryLow = false;
     mBattery = 0xffff;
@@ -155,8 +155,10 @@ int Wax9::update()
         int numNewReadings = getNumNewReadings();
     
         // make sure we're not disconnected
-        if (numNewReadings > 0) mLastReadingTime = app::getElapsedSeconds();
-        else if ((app::getElapsedSeconds() - mLastReadingTime) > mTimeout) bConnected = false;
+        if (numNewReadings > 0)
+            mLastReadingTime = app::getElapsedSeconds();
+        else if (getNumReadings() > 0 && ((app::getElapsedSeconds() - mLastReadingTime) > mTimeout))
+            bConnected = false;
         
         return numNewReadings;
     }
