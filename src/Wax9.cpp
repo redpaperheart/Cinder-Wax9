@@ -82,7 +82,7 @@ bool Wax9::setup(string portName, int historyLength)
     
     try {
         Serial::Device device = Serial::findDeviceByNameContains(portName);
-        mSerial = Serial(device, 115200);
+        mSerial = Serial::create(device, 115200);
         app::console() << "Receiver sucessfully connected to " << device.getName() << std::endl;
     }
     catch(SerialExc e) {
@@ -111,13 +111,13 @@ bool Wax9::start()
         
         app::console() << settings;
         
-        // send wait for reply from device
-        mSerial.writeString(settings);
-        app::console() << mSerial.readStringUntil('\n') << std::endl;
+        // send settings and wait for reply from device
+        mSerial->writeString(settings);
+        app::console() << mSerial->readStringUntil('\n') << std::endl;
         
         // start streaming
         std::string init = "\r\nSTREAM\r\n";       // start streaming
-        mSerial.writeString(init);
+        mSerial->writeString(init);
         
         return true;
     }
@@ -176,7 +176,7 @@ void Wax9::resetOrientation(quat q)
 int Wax9::readPackets(char* buffer)
 {
     int packetsRead = 0;
-    while(mSerial.getNumBytesAvailable() > 0)
+    while(mSerial->getNumBytesAvailable() > 0)
     {
         // Read data
         size_t bytesRead = lineread(buffer, BUFFER_SIZE);
@@ -287,7 +287,7 @@ size_t Wax9::lineread(void *inBuffer, size_t len)
         c = '\0';
         
         try{
-            c = mSerial.readByte();
+            c = mSerial->readByte();
         }
         catch(...) {
             return bytesRead;
@@ -326,7 +326,7 @@ size_t Wax9::slipread(void *inBuffer, size_t len)
         c = '\0';
         
         try{
-            c = mSerial.readByte();
+            c = mSerial->readByte();
         }
         catch(...) {
             return bytesRead;
@@ -341,7 +341,7 @@ size_t Wax9::slipread(void *inBuffer, size_t len)
                 c = '\0';
                 
                 try{
-                    c = mSerial.readByte();
+                    c = mSerial->readByte();
                 }
                 catch(...) {
                     return bytesRead;
@@ -515,9 +515,9 @@ quat Wax9::AHRStoOpenGL(const quat &q)
 {
     vec3 eul = QuaternionToEuler(q);
     
-    mat4 sensorRotMat = glm::rotate(-eul.z, vec3(0, 0, 1));	// Z: phi (roll)
-    sensorRotMat *= glm::rotate(-eul.y, vec3(1, 0, 0));        // X: theta (pitch)
-    sensorRotMat *= glm::rotate(-eul.x, vec3(0, 1, 0));        // Y: psi (yaw)
+    mat4 sensorRotMat = glm::rotate(-eul.z, vec3(0, 0, 1));     // Z: phi (roll)
+    sensorRotMat *= glm::rotate(-eul.y, vec3(1, 0, 0));         // X: theta (pitch)
+    sensorRotMat *= glm::rotate(-eul.x, vec3(0, 1, 0));         // Y: psi (yaw)
     
     return quat(sensorRotMat);
 }

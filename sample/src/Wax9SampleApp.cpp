@@ -1,4 +1,4 @@
-#include "cinder/app/AppNative.h"
+#include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 
@@ -12,7 +12,7 @@ using namespace ci;
 using namespace ci::app;
 using namespace std;
 
-class Wax9SampleApp : public AppNative {
+class Wax9SampleApp : public App {
 public:
     void setup();
     void update();
@@ -62,9 +62,8 @@ void Wax9SampleApp::setup()
     }
     
     // setup camera
-    mCam = CameraPersp(getWindowWidth(), getWindowHeight(), 45.0);
-    mCam.setEyePoint(vec3(0, 0, 100));
-    mCam.setCenterOfInterestPoint(vec3(0));
+    mCam.setPerspective(45.0f, getWindowAspectRatio(), 0.1f, 1000.0f);
+    mCam.lookAt(vec3(0, 0, 100), vec3(0));
 }
 
 void Wax9SampleApp::update()
@@ -178,4 +177,4 @@ void Wax9SampleApp::keyDown(KeyEvent event)
 }
 
 
-CINDER_APP_NATIVE( Wax9SampleApp, RendererGl )
+CINDER_APP( Wax9SampleApp, RendererGl )

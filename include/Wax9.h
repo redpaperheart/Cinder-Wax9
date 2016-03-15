@@ -178,7 +178,7 @@ protected:
     unsigned short      mBattery;       // in mV - see page 16 of dev guide
     uint32_t            mPressure;      // in Pascals
     float               mTemperature;   // in Celsius
-    Serial              mSerial;
+    SerialRef           mSerial;
     SampleBuffer*       mSamples;
     ahrs_struct_t       mAhrs;      // interface with AHRS algorithm
 };
