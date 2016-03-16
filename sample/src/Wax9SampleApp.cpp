@@ -51,10 +51,16 @@ void Wax9SampleApp::setup()
     mStartRotationAHRS = quat(startRotMat);  // save it in a quaternion
     
     // Initialize Wax9 with its port name
-    // (type this in terminal to find the connected devices: ls /dev/tty.*)
     try {
-		app::console() << "Setup WAX9 " << std::endl;
-        mWax9.setup("WAX9");
+#ifdef CINDER_MSW
+		// for windows you'll need to use the COM name of the serial port
+		// (see this bug https://github.com/cinder/Cinder/issues/1064)
+		mWax9.setup("COM5");
+#else
+		// for osx you can just use a part of the device name and it will be found
+		// (type this in terminal to find the connected devices: ls /dev/tty.*)
+		mWax9.setup("WAX9");
+#endif
         mWax9.setDebug(false );
         mWax9.start();
         mWax9.resetOrientation(mStartRotationAHRS);

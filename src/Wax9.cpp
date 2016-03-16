@@ -79,10 +79,16 @@ bool Wax9::setup(string portName, int historyLength)
     
     app::console() << "Available serial ports: " << std::endl;
     for( auto device : Serial::getDevices()) app::console() << device.getName() << ", " << device.getPath() << std::endl;
-    
+
     try {
+#ifdef CINDER_MSW
+		// finding serial devices is bugged in Windows
+		// see https://github.com/cinder/Cinder/issues/1064
+		Serial::Device device(portName);
+#else
         Serial::Device device = Serial::findDeviceByNameContains(portName);
-        mSerial = Serial::create(device, 115200);
+#endif
+		mSerial = Serial::create(device, 115200);
         app::console() << "Receiver sucessfully connected to " << device.getName() << std::endl;
     }
     catch(SerialExc e) {
