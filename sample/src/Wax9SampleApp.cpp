@@ -54,6 +54,7 @@ void Wax9SampleApp::setup()
     try {
 #ifdef CINDER_MSW
 		// for windows you'll need to use the COM name of the serial port
+		// which you can find in the device manager
 		// (see this bug https://github.com/cinder/Cinder/issues/1064)
 		mWax9.setup("COM5");
 #else

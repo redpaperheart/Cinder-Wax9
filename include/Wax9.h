@@ -5,8 +5,8 @@
  Code based on the waxrec application:
  https://github.com/digitalinteraction/openmovement/tree/master/Software/WAX3/waxrec
  
- For more information read developer guide:
- http://axivity.com/v2/products/WAX9/WAX9DeveloperGuide.pdf
+ For more information read the developer guide:
+ http://axivity.com/userguides/wax9/
  */
 
 /*
@@ -40,6 +40,7 @@
 #pragma once
 
 #include "cinder/app/App.h"
+#include "cinder/Quaternion.h"
 #include "cinder/Thread.h"
 //#include "cinder/ConcurrentCircularBuffer.h"
 #include "cinder/Serial.h"
@@ -85,8 +86,8 @@ typedef struct
     vec3 acc;
     vec3 gyr;
     vec3 mag;
-    glm::quat rotAHRS;   // original quaternion in the coordinate system of the AHRS algorithm
-    glm::quat rotOGL;    // quaternion transformed to the OpenGL coordinate system
+    quat rotAHRS;   // original quaternion in the coordinate system of the AHRS algorithm
+    quat rotOGL;    // quaternion transformed to the OpenGL coordinate system
 } Wax9Sample;
 
 typedef  boost::circular_buffer<Wax9Sample> SampleBuffer;
@@ -102,7 +103,7 @@ public:
     bool        stop();
     int         update();
     
-    void        resetOrientation(glm::quat q = glm::quat());
+    void        resetOrientation(quat q = quat());
     void        setDebug(bool b)                    { bDebug = b; }
     void        setSmooth(bool s, float f = 0.5f)   { bSmooth = s; mSmoothFactor = f; }
     
@@ -119,7 +120,7 @@ public:
     Wax9Sample      getReading(int i)               { return mSamples->at(i); }
     SampleBuffer*   getReadings()                   { return mSamples; }
     
-    glm::quat        getOrientation(bool AHRS = false)   { return AHRS ? getReading().rotAHRS : getReading().rotOGL; }
+    quat        getOrientation(bool AHRS = false)   { return AHRS ? getReading().rotAHRS : getReading().rotOGL; }
     vec3        getAcceleration()                   { return getReading().acc; }
     float       getAccelerationLength()             { return getReading().accLen; }
     
@@ -129,8 +130,8 @@ public:
     void        setGyroDelta(vec3 delta)            { mGyroDelta = delta; }
     vec3        getGyroDelta()                      { return mGyroDelta; }
     
-    static vec3 QuaternionToEuler(const glm::quat &q);
-    static glm::quat AHRStoOpenGL(const glm::quat &q);
+    static vec3 QuaternionToEuler(const quat &q);
+    static quat AHRStoOpenGL(const quat &q);
     
 protected:
     
@@ -140,7 +141,7 @@ protected:
     size_t              lineread(void *inBuffer, size_t len);
     Wax9Packet*         parseWax9Packet(const void *inputBuffer, size_t len, unsigned long long now);
     Wax9Sample          processPacket(Wax9Packet *packet);
-    glm::quat                calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp);
+    quat                calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp);
     
     // utils
     void                printWax9(Wax9Packet *waxPacket);
