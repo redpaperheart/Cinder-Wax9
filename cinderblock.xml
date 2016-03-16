@@ -7,9 +7,12 @@
     git="https://github.com/redpaperheart/Cinder-Wax9"
   	summary="Cinder block to access the Wax9 IMU sensor by Axivity."
   	>
-  	<supports os="macosx" />
+    <supports os="macosx"/>
+  	<supports os="msw"/>
     <includePath>include</includePath>
     <header>include/Wax9.h</header>
+    <header>include/ahrs.h</header>
     <source>src/Wax9.cpp</source>
+    <source>src/ahrs.c</source>
   </block>  
 </cinder>

@@ -146,10 +146,7 @@ void Wax9SampleApp::drawOrientation()
 
         quat sensorRotOGL = mWax9.getOrientation();
         
-        gl::enableDepthRead();
-        gl::enableDepthWrite();
-        
-        
+        gl::ScopedDepth depth(true);
         gl::ScopedMatrices cameraMatrices;
         gl::setMatrices(mCam);
         gl::rotate(sensorRotOGL);
@@ -161,11 +158,8 @@ void Wax9SampleApp::drawOrientation()
         // draw text and arrow
         gl::rotate(M_PI_2, 1, 0, 0);
         gl::scale(vec3(0.25, -0.25, 1.0));
-        gl::translate(vec3(0, -8, 2.51));
+        gl::translate(vec3(0, -8, 2.52));
         gl::drawStringCentered("◀︎Axivity", vec2(0, 0), Color::white(), Font("Arial", 24));
-    
-        gl::disableDepthRead();
-        gl::disableDepthWrite();
     }
 }
 
@@ -177,4 +171,4 @@ void Wax9SampleApp::keyDown(KeyEvent event)
 }
 
 
-CINDER_APP( Wax9SampleApp, RendererGl )
+CINDER_APP( Wax9SampleApp, RendererGl(RendererGl::Options().msaa(8)) )
