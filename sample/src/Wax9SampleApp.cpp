@@ -53,6 +53,7 @@ void Wax9SampleApp::setup()
     // Initialize Wax9 with its port name
     // (type this in terminal to find the connected devices: ls /dev/tty.*)
     try {
+		app::console() << "Setup WAX9 " << std::endl;
         mWax9.setup("WAX9");
         mWax9.setDebug(false );
         mWax9.start();
@@ -156,7 +157,7 @@ void Wax9SampleApp::drawOrientation()
         gl::drawCoordinateFrame(25.0, 2.0, 1.0);    // frame coords
    
         // draw text and arrow
-        gl::rotate(M_PI_2, 1, 0, 0);
+		gl::rotate( M_PI / 2.0f, 1.0f, 0.0f, 0.0f); //M_PI_2
         gl::scale(vec3(0.25, -0.25, 1.0));
         gl::translate(vec3(0, -8, 2.52));
         gl::drawStringCentered("◀︎Axivity", vec2(0, 0), Color::white(), Font("Arial", 24));
