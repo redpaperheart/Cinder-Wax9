@@ -118,7 +118,7 @@ bool Wax9::start()
         
         // send settings and wait for reply from device
         mSerial->writeString(settings);
-        app::console() << mSerial->readStringUntil('\n') << std::endl;
+        app::console() << mSerial->readStringUntil('\n', -1, 2.0) << std::endl;
         
         // start streaming
         std::string init = "\r\nSTREAM\r\n";       // start streaming
