@@ -56,7 +56,7 @@ void Wax9SampleApp::setup()
 		// for windows you'll need to use the COM name of the serial port
 		// which you can find in the device manager
 		// (see this bug https://github.com/cinder/Cinder/issues/1064)
-		mWax9.setup("COM5");
+		mWax9.setup("COM7");
 #else
 		// for osx you can just use a part of the device name and it will be found
 		// (type this in terminal to find the connected devices: ls /dev/tty.*)
