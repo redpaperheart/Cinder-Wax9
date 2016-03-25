@@ -60,7 +60,7 @@ void Wax9SampleApp::setup()
 #else
 		// for osx you can just use a part of the device name and it will be found
 		// (type this in terminal to find the connected devices: ls /dev/tty.*)
-		mWax9.setup("WAX9");
+		mWax9.setup("C1");
 #endif
         mWax9.setDebug(false );
         mWax9.start();

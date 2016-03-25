@@ -12,6 +12,7 @@
 		00B784B40FF439BC000DE1D7 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B00FF439BC000DE1D7 /* AudioToolbox.framework */; };
 		00B784B50FF439BC000DE1D7 /* AudioUnit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B10FF439BC000DE1D7 /* AudioUnit.framework */; };
 		00B784B60FF439BC000DE1D7 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00B784B20FF439BC000DE1D7 /* CoreAudio.framework */; };
+		2023B92A1CA491840090F208 /* Fusion.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 2023B9291CA491840090F208 /* Fusion.cpp */; };
 		204A8D431AA8C5C7004FF985 /* ahrs.c in Sources */ = {isa = PBXBuildFile; fileRef = 204A8D421AA8C5C7004FF985 /* ahrs.c */; };
 		207911C71C98B1C3009CA378 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 207911C61C98B1C3009CA378 /* IOKit.framework */; };
 		207911C91C98B1C7009CA378 /* IOSurface.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 207911C81C98B1C7009CA378 /* IOSurface.framework */; };
@@ -33,6 +34,13 @@
 		00B784B20FF439BC000DE1D7 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		085F77F9DED94E3DBFE23C0C /* Wax9Sample_Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Wax9Sample_Prefix.pch; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		2023B9281CA4917E0090F208 /* Fusion.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Fusion.h; sourceTree = "<group>"; };
+		2023B9291CA491840090F208 /* Fusion.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Fusion.cpp; sourceTree = "<group>"; };
+		2023B92B1CA496610090F208 /* mat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mat.h; sourceTree = "<group>"; };
+		2023B92C1CA496610090F208 /* quat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = quat.h; sourceTree = "<group>"; };
+		2023B92D1CA496610090F208 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vec.h; sourceTree = "<group>"; };
+		2023B92E1CA49AFE0090F208 /* traits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = traits.h; sourceTree = "<group>"; };
+		2023B9311CA4A0F60090F208 /* Errors.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Errors.h; sourceTree = "<group>"; };
 		204A8D411AA8C5BD004FF985 /* ahrs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ahrs.h; sourceTree = "<group>"; };
 		204A8D421AA8C5C7004FF985 /* ahrs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ahrs.c; sourceTree = "<group>"; };
 		207911C61C98B1C3009CA378 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
@@ -119,6 +127,25 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		2023B9301CA4A0F60090F208 /* utils */ = {
+			isa = PBXGroup;
+			children = (
+				2023B9311CA4A0F60090F208 /* Errors.h */,
+			);
+			path = utils;
+			sourceTree = "<group>";
+		};
+		2023B9321CA4A27F0090F208 /* types */ = {
+			isa = PBXGroup;
+			children = (
+				2023B92B1CA496610090F208 /* mat.h */,
+				2023B92C1CA496610090F208 /* quat.h */,
+				2023B92E1CA49AFE0090F208 /* traits.h */,
+				2023B92D1CA496610090F208 /* vec.h */,
+			);
+			name = types;
+			sourceTree = "<group>";
+		};
 		29B97314FDCFA39411CA2CEA /* Wax3Sample */ = {
 			isa = PBXGroup;
 			children = (
@@ -174,6 +201,7 @@
 			children = (
 				204A8D411AA8C5BD004FF985 /* ahrs.h */,
 				60C335A3182419FA00C062E1 /* Wax9.h */,
+				2023B9281CA4917E0090F208 /* Fusion.h */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -181,8 +209,11 @@
 		60C335A5182419FA00C062E1 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				2023B9321CA4A27F0090F208 /* types */,
+				2023B9301CA4A0F60090F208 /* utils */,
 				204A8D421AA8C5C7004FF985 /* ahrs.c */,
 				60C335A7182419FA00C062E1 /* Wax9.cpp */,
+				2023B9291CA491840090F208 /* Fusion.cpp */,
 			);
 			path = src;
 			sourceTree = "<group>";
@@ -253,6 +284,7 @@
 				C2E78E8121C54FA894ED3BBC /* Wax9SampleApp.cpp in Sources */,
 				204A8D431AA8C5C7004FF985 /* ahrs.c in Sources */,
 				60C335D3182419FA00C062E1 /* Wax9.cpp in Sources */,
+				2023B92A1CA491840090F208 /* Fusion.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -320,7 +352,7 @@
 				HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\"";
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include";
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../src ../../src ../../include ../../src/utils";
 			};
 			name = Debug;
 		};
@@ -337,7 +369,7 @@
 				HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\"";
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include";
+				USER_HEADER_SEARCH_PATHS = "\"$(CINDER_PATH)/include\" ../include ../src ../../src ../../include ../../src/utils";
 			};
 			name = Release;
 		};

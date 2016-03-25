@@ -27,6 +27,7 @@
  */
 
 #include "Wax9.h"
+#include "vec.h"
 
 /* -------------------------------------------------------------------------------------------------- */
 #pragma mark constructors and setup
@@ -96,7 +97,8 @@ bool Wax9::setup(string portName, int historyLength)
         return false;
     }
     
-    AhrsInit(&mAhrs, 0, mOutputRate, 0.1f);
+//    AhrsInit(&mAhrs, 0, mOutputRate, 0.1f);
+    mFusion.init();
     
     bConnected = true;
     return true;
@@ -173,7 +175,9 @@ int Wax9::update()
 void Wax9::resetOrientation(quat q)
 {
     float quat[4] = {q.w, q.x, q.y, q.z};
-    AhrsReset(&mAhrs, quat);
+//    AhrsReset(&mAhrs, quat);
+    mFusion.init();
+//    mFusion.initFusion(,)
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -222,9 +226,12 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     Wax9Sample s;
     s.timestamp = p->timestamp;
     s.sampleNumber = p->sampleNumber;
-    s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in g
+    s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in 'G' (9.81 m/s/s)
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
-    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // in μT
+    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.05f;                 // steps of 0.1 μT - page 19 of dev guide (magnetic field ranges between 25-65 uT)
+    
+    app::console() << s.mag << std::endl;
+    
     s.accLen = length(s.acc);
     s.rotAHRS = calculateOrientation(s.acc, s.gyr - mGyroDelta , s.mag, s.timestamp);
     s.rotOGL = AHRStoOpenGL(s.rotAHRS);
@@ -250,22 +257,35 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
 quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &mag, uint32_t timestamp)
 {
     // set sample frequency for AHRS algorithm
-//    if (!mSamples->empty()) {
-//        // compare timestamp between previous sample and this one
-//        uint32_t prevTimestamp = mSamples->front().timestamp;
-//        uint32_t diff = timestamp - prevTimestamp;
-//        float diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
+    if (!mSamples->empty()) {
+        // compare timestamp between previous sample and this one
+        uint32_t prevTimestamp = mSamples->front().timestamp;
+        uint32_t diff = timestamp - prevTimestamp;
+        float diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
 //        mAhrs.sampleFreq = 1.0f / diffSeconds;
-//    }
+    }
 //    else mAhrs.sampleFreq = mOutputRate;
     
     // Call AHRS algorithm update
     // we're not using the accelerometer yet
-    float gyro[3]   = {gyr.x, gyr.y, gyr.z};
-    float accel[3]  = {acc.x, acc.y, acc.z};
-    AhrsUpdate(&mAhrs, gyro, accel, NULL);
+//    float gyro[3]   = {gyr.x, gyr.y, gyr.z};
+//    float accel[3]  = {acc.x, acc.y, acc.z};
+//    AhrsUpdate(&mAhrs, gyro, accel, NULL);
+
+    // Call Fusion
+    android::vec3_t gyro({gyr.x, gyr.y, gyr.z});
+    android::vec3_t accel({acc.x, acc.y, acc.z});
+    android::vec3_t magne({mag.x, mag.y, mag.z});
     
-    return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
+    mFusion.handleAcc(accel);
+    mFusion.handleGyro(gyro, 0.00005);
+    mFusion.handleMag(magne);
+    
+    android::quat_t att = mFusion.getAttitude();
+    
+//    return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
+    
+    return quat(att.x, att.y, att.z, att.w);
 }
 
 

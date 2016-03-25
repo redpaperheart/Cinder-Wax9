@@ -49,7 +49,9 @@
 #include <boost/circular_buffer.hpp>
 #include <sys/timeb.h>
 
-#include "ahrs.h"
+//#include "ahrs.h"
+
+#include "Fusion.h"
 
 // Wax Structures
 #define BUFFER_SIZE 0xffff
@@ -181,6 +183,9 @@ protected:
     float               mTemperature;   // in Celsius
     SerialRef           mSerial;
     SampleBuffer*       mSamples;
-    ahrs_struct_t       mAhrs;      // interface with AHRS algorithm
+    
+//    ahrs_struct_t       mAhrs;      // interface with AHRS algorithm
+    android::Fusion     mFusion;
+    
 };
 
