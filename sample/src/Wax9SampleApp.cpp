@@ -27,6 +27,9 @@ public:
     CameraPersp mCam;
     
     Wax9 mWax9;
+    
+    // test
+    deque<vec3> mMag;
 };
 
 void Wax9SampleApp::setup()
@@ -60,7 +63,7 @@ void Wax9SampleApp::setup()
 #else
 		// for osx you can just use a part of the device name and it will be found
 		// (type this in terminal to find the connected devices: ls /dev/tty.*)
-		mWax9.setup("C1");
+		mWax9.setup("2B");
 #endif
         mWax9.setDebug(false );
         mWax9.start();
@@ -92,13 +95,28 @@ void Wax9SampleApp::update()
 void Wax9SampleApp::draw()
 {
     gl::clear(Color::gray(mFlash));
-    gl::enableAlphaBlending();
     
     gl::drawString(to_string((int)getAverageFps()), vec2(20, 20));
     
     if (mWax9.isConnected() && mWax9.hasReadings()) {
         drawGraph();
         drawOrientation();
+        
+        {
+            // test - draw magnetometer data
+            mMag.push_back(mWax9.getReading().mag);
+            if (mMag.size() > 5000) mMag.pop_front();
+            
+            gl::ScopedColor c(1, 1, 1);
+            gl::ScopedDepth depth(true);
+            gl::ScopedMatrices cameraMatrices;
+            gl::setMatrices(mCam);
+            
+            for (vec3 &v : mMag) {
+                gl::drawCube(v * 0.25f, vec3(0.25));
+//                gl::drawLine(vec3(0), v * 0.5f);
+            }
+        }
     }
     else {
         gl::drawStringCentered("Wax9 not found. Check Bluetooth pairing and port name", getWindowCenter());

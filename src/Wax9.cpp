@@ -228,7 +228,7 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.sampleNumber = p->sampleNumber;
     s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in 'G' (9.81 m/s/s)
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
-    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.05f;                 // steps of 0.1 μT - page 19 of dev guide (magnetic field ranges between 25-65 uT)
+    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // steps of 0.1 μT - page 19 of dev guide (magnetic field ranges between 25-65 uT)
     
     app::console() << s.mag << std::endl;
     
