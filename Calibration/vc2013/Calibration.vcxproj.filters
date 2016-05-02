@@ -1,0 +1,61 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="Blocks">
+      <UniqueIdentifier>{535A1778-A5B3-4F0A-BC4A-BE7AF846711F}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-Wax9">
+      <UniqueIdentifier>{0591914C-8B87-4151-B313-EDB9A262DFEB}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-Wax9\include">
+      <UniqueIdentifier>{C71F99EB-97EE-4112-A12F-301D4ECC5439}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Blocks\Cinder-Wax9\src">
+      <UniqueIdentifier>{9093C091-36D5-4445-AB84-BC2328471590}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\src\CalibrationApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\CalibrationApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClInclude Include="..\include\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Wax9.h">
+      <Filter>Blocks\Cinder-Wax9\include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ahrs.h">
+      <Filter>Blocks\Cinder-Wax9\include</Filter>
+    </ClInclude>
+    <ClCompile Include="..\..\src\Wax9.cpp">
+      <Filter>Blocks\Cinder-Wax9\src</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ahrs.c">
+      <Filter>Blocks\Cinder-Wax9\src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\include\Resources.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resources.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
