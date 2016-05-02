@@ -5,6 +5,7 @@
 #include "cinder/params/Params.h"
 #include "cinder/Serial.h"
 #include "cinder/Log.h"
+#include "cinder/Json.h"
 
 #include "Wax9.h"
 
@@ -18,13 +19,16 @@ using namespace std;
 
 class CalibrationApp : public App {
 public:
-    void setup();
-    void update();
-    void draw();
-    void keyDown(KeyEvent event);
-    
+    void setup() override;
+    void update() override;
+    void draw() override;
+    void keyDown(KeyEvent event) override;
+    void fileDrop(FileDropEvent event) override;
+
     void reset();
     void calibrate();
+    void saveJson();
+    void loadJson(fs::path path);
     void drawOrientation();
     void drawCalibration();
     
@@ -97,6 +101,7 @@ void CalibrationApp::setup()
     mParams->addSeparator();
     mParams->addButton("Reset", std::bind(&CalibrationApp::reset, this));
     mParams->addButton("Calibrate", std::bind(&CalibrationApp::calibrate, this));
+    mParams->addButton("Save Json", std::bind(&CalibrationApp::saveJson, this));
     
     mParams->addSeparator();
     vector<string> modes = {"Calibration", "Orientation"};
@@ -199,6 +204,14 @@ void CalibrationApp::keyDown(KeyEvent event)
     }
 }
 
+void CalibrationApp::fileDrop(FileDropEvent event)
+{
+    fs::path path = event.getFile(0);
+    if (path.extension() == ".json") {
+        loadJson(path);
+    }
+}
+
 void CalibrationApp::reset()
 {
     mBox.set(vec3(0), vec3(0));
@@ -211,6 +224,50 @@ void CalibrationApp::calibrate()
     mWax9.setMagOffset(-mBox.getCenter());
 }
 
+void CalibrationApp::loadJson(fs::path path)
+{
+    if(!fs::exists(path)) return;
+    
+    // parse and add story illustrations
+    try {
+        JsonTree doc(loadFile(path));
+        
+        vec3 off(doc["offset"]["x"].getValue<float>(),
+                 doc["offset"]["y"].getValue<float>(),
+                 doc["offset"]["z"].getValue<float>());
+        
+        mWax9.setMagOffset(off);
+    }
+    catch( const JsonTree::ExcJsonParserError& e )  {
+        app::console() << "Failed to parse json file: " << e.what() << std::endl;
+    }
+}
+
+void CalibrationApp::saveJson()
+{
+    const auto getTimestamp = []()
+    {
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+        
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
+        return ss.str();
+    };
+    
+    JsonTree off = JsonTree::makeObject("offset");
+    off.pushBack(JsonTree("x", -mBox.getCenter().x));
+    off.pushBack(JsonTree("y", -mBox.getCenter().y));
+    off.pushBack(JsonTree("z", -mBox.getCenter().z));
+    
+    JsonTree doc = JsonTree::makeObject("");
+    doc.pushBack(off);
+    
+    fs::path jsonPath(app::getAppPath() / ( mSerialNames[mSerialName] +  "_mag_" + getTimestamp()  + ".json"));
+    doc.write(writeFile(jsonPath), JsonTree::WriteOptions());
+    
+    CI_LOG_V("Saved JSON file " << jsonPath );
+}
 
 CINDER_APP( CalibrationApp, RendererGl(RendererGl::Options().msaa(8)), [](CalibrationApp::Settings *s)
 {

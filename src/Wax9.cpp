@@ -96,7 +96,7 @@ bool Wax9::setup(string portName, int historyLength)
         return false;
     }
     
-    AhrsInit(&mAhrs, 0, mOutputRate, 0.1f);
+    AhrsInit(&mAhrs, 0, mOutputRate, 0.01f);
     
     bConnected = true;
     return true;
@@ -224,7 +224,7 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.sampleNumber = p->sampleNumber;
     s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in g
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
-    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f + mMagOffset;    // in μT
+    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;    // in μT
     s.accLen = length(s.acc);
     s.rotAHRS = calculateOrientation(s.acc, s.gyr - mGyroDelta , s.mag, s.timestamp);
     s.rotOGL = AHRStoOpenGL(s.rotAHRS);
@@ -263,12 +263,14 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     // we're not using the accelerometer yet
     float gyro[3]   = {gyr.x, gyr.y, gyr.z};
     float accel[3]  = {acc.x, acc.y, acc.z};
-    float magn[3]  =   {mag.x, mag.y, mag.z};
     
-    if (mMagOffset != vec3(0))
+    if (mMagOffset != vec3(0)) {
+        float magn[3] = {mag.x + mMagOffset.x, mag.y + mMagOffset.y, mag.z + mMagOffset.z};
         AhrsUpdate(&mAhrs, gyro, accel, magn);
-    else
+    }
+    else {
         AhrsUpdate(&mAhrs, gyro, accel, NULL);
+    }
     
     return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
 }
