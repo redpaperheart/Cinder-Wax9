@@ -224,7 +224,7 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
     s.sampleNumber = p->sampleNumber;
     s.acc = vec3(p->accel.x, p->accel.y, p->accel.z) / 4096.0f;         // table 19 - in g
     s.gyr = vec3(p->gyro.x, p->gyro.y, p->gyro.z) * toRadians(0.07f);   // table 20 + convert deg/s to rad/s
-    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f;                 // in μT
+    s.mag = vec3(p->mag.x, p->mag.y, -p->mag.z) * 0.1f + mMagOffset;    // in μT
     s.accLen = length(s.acc);
     s.rotAHRS = calculateOrientation(s.acc, s.gyr - mGyroDelta , s.mag, s.timestamp);
     s.rotOGL = AHRStoOpenGL(s.rotAHRS);
@@ -263,7 +263,12 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     // we're not using the accelerometer yet
     float gyro[3]   = {gyr.x, gyr.y, gyr.z};
     float accel[3]  = {acc.x, acc.y, acc.z};
-    AhrsUpdate(&mAhrs, gyro, accel, NULL);
+    float magn[3]  =   {mag.x, mag.y, mag.z};
+    
+    if (mMagOffset != vec3(0))
+        AhrsUpdate(&mAhrs, gyro, accel, magn);
+    else
+        AhrsUpdate(&mAhrs, gyro, accel, NULL);
     
     return quat(mAhrs.q[0], mAhrs.q[1], mAhrs.q[2], mAhrs.q[3]);
 }
@@ -387,6 +392,7 @@ Wax9Packet* Wax9::parseWax9Packet(const void *inputBuffer, size_t len, unsigned 
     if (buffer[0] != '9')
     {
         fprintf(stderr, "WARNING: Unrecognized packet -- ignoring.\n");
+        return NULL;
     }
     else if (len >= 20)
     {
@@ -457,6 +463,7 @@ Wax9Packet* Wax9::parseWax9Packet(const void *inputBuffer, size_t len, unsigned 
     else
     {
         fprintf(stderr, "WARNING: Unrecognized WAX9 packet -- ignoring.\n");
+        return NULL;
     }
     return NULL;
 }

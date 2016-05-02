@@ -106,6 +106,8 @@ public:
     void        resetOrientation(quat q = quat());
     void        setDebug(bool b)                    { bDebug = b; }
     void        setSmooth(bool s, float f = 0.5f)   { bSmooth = s; mSmoothFactor = f; }
+    void        setMagOffset(vec3 offset)           { mMagOffset = offset; }
+    void        markAsRead()                        { mNewReadings = 0; }
     
     bool        isConnected()                       { return bConnected; }
     bool        isEnabled()                         { return bEnabled; }
@@ -114,7 +116,7 @@ public:
     bool        hasNewReadings()                    { return mNewReadings > 0; }    // not used yet
     int         getNumNewReadings()                 { return min(mNewReadings, getNumReadings()); }        // not used yet
     int         getNumReadings()                    { return mSamples->size(); }
-    void        markAsRead()                        { mNewReadings = 0; }
+    vec3        getMagOffset()                      { return mMagOffset; }
     
     Wax9Sample      getReading()                    { return mSamples->front(); }
     Wax9Sample      getReading(int i)               { return mSamples->at(i); }
@@ -172,6 +174,7 @@ protected:
     int                 mDataMode;
     
     vec3                mGyroDelta;
+    vec3                mMagOffset;
     
     // data
     char                mBuffer[BUFFER_SIZE];
