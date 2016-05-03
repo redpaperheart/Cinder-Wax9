@@ -41,6 +41,7 @@
 		20F1CCB71CD80D06001A1853 /* quat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = quat.h; path = ../../src/quat.h; sourceTree = "<group>"; };
 		20F1CCB81CD80D06001A1853 /* traits.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = traits.h; path = ../../src/traits.h; sourceTree = "<group>"; };
 		20F1CCB91CD80D06001A1853 /* vec.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = vec.h; path = ../../src/vec.h; sourceTree = "<group>"; };
+		20F1CCBC1CD8FA1D001A1853 /* Fusion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = Fusion.h; path = ../../include/Fusion.h; sourceTree = "<group>"; };
 		2289251445004A2BBBDFB57A /* Wax9.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.cpp; name = Wax9.cpp; path = ../../src/Wax9.cpp; sourceTree = "<group>"; };
 		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
 		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
@@ -122,6 +123,7 @@
 		125DDE32AE7742AAA69978DA /* include */ = {
 			isa = PBXGroup;
 			children = (
+				20F1CCBC1CD8FA1D001A1853 /* Fusion.h */,
 				D3D131B6755648A2A71CF953 /* Wax9.h */,
 			);
 			name = include;

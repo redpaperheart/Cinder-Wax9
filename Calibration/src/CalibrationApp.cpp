@@ -65,12 +65,12 @@ void CalibrationApp::setup()
     // In this case the starting position will be the one with the arrow pointing up
     // and looking at us. So:
     
-    mat4 startRotMat;
-    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(1, 0, 0));  // x
-    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(0, 1, 0));  // y
-    startRotMat *= glm::rotate(0.0f, vec3(0, 0, 1));               // z
-    
-    mStartRotationAHRS = quat(startRotMat);  // save it in a quaternion
+//    mat4 startRotMat;
+//    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(1, 0, 0));  // x
+//    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(0, 1, 0));  // y
+//    startRotMat *= glm::rotate(0.0f, vec3(0, 0, 1));               // z
+//    
+//    mStartRotationAHRS = quat(startRotMat);  // save it in a quaternion
     
 
     // setup camera

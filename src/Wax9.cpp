@@ -57,9 +57,9 @@ Wax9::Wax9()
     bGyrOn = true;
     bMagOn = true;
     mOutputRate = 120;
-    mAccRate = 200;
-    mGyrRate = 200;
-    mMagRate = 80;
+    mAccRate = 120;
+    mGyrRate = 120;
+    mMagRate = 120;
     mAccRange = 8;
     mGyrRange = 2000;
     mDataMode = 1;
@@ -176,7 +176,8 @@ void Wax9::resetOrientation(quat q)
 {
 //    float quat[4] = {q.w, q.x, q.y, q.z};
     // todo: not sure how to pass starting quat
-    mFusion.init();
+//    mFusion.init();
+    mFusion = android::Fusion();
 }
 
 /* -------------------------------------------------------------------------------------------------- */
@@ -254,16 +255,13 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
 {
     // TODO: double check units and dT are correct
     // set sample frequency for AHRS algorithm
-    float diffSeconds = 0;
-    
+    float diffSeconds = mOutputRate;
     if (!mSamples->empty()) {
         // compare timestamp between previous sample and this one
         uint32_t prevTimestamp = mSamples->front().timestamp;
         uint32_t diff = timestamp - prevTimestamp;
-        diffSeconds = (float) diff / 65536.0f; // timestamps are in 1/65536 of a second
-//        mAhrs.sampleFreq = 1.0f / diffSeconds;
+        diffSeconds = float(diff) / 65536.0f; // timestamps are in 1/65536 of a second
     }
-//    else mAhrs.sampleFreq = mOutputRate;
     
     // Call Fusion
     vec3 m = mag + mMagOffset;
@@ -273,12 +271,15 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     
     mFusion.handleAcc(accel);
     mFusion.handleGyro(gyro, diffSeconds);    // option 1: use actual delta between readings
-//    mFusion.handleGyro(gyro, 1.0f/(float)mGyrRate);      // option 2: use default delta
+//    mFusion.handleGyro(gyro, 1.0f/(float)mOutputRate);      // option 2: use default delta
     mFusion.handleMag(magne);
     
     android::quat_t att = mFusion.getAttitude();
     
-    return quat(att.x, att.y, att.z, att.w);
+//    app::console() << " output dt: " << 1.0f / mOutputRate << " gryo dt: " << 1.0f / mGyrRate << " actual dT: " << diffSeconds << std::endl;
+    
+//    return quat(att.x, att.y, att.z, att.w);
+    return quat(att.w, att.x, att.y, att.z);    // glm stores W first!!!
 }
 
 
