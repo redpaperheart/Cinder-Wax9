@@ -108,6 +108,7 @@ public:
     void        resetOrientation(quat q = quat());
     void        setDebug(bool b)                    { bDebug = b; }
     void        setSmooth(bool s, float f = 0.5f)   { bSmooth = s; mSmoothFactor = f; }
+    void        setMagScale(vec3 scale)             { mMagScale = scale; }
     void        setMagOffset(vec3 offset)           { mMagOffset = offset; }
     void        markAsRead()                        { mNewReadings = 0; }
     
@@ -118,6 +119,7 @@ public:
     bool        hasNewReadings()                    { return mNewReadings > 0; }    // not used yet
     int         getNumNewReadings()                 { return min(mNewReadings, getNumReadings()); }        // not used yet
     int         getNumReadings()                    { return mSamples->size(); }
+    vec3        getMagScale()                       { return mMagScale; }
     vec3        getMagOffset()                      { return mMagOffset; }
     
     Wax9Sample      getReading()                    { return mSamples->front(); }
@@ -177,6 +179,7 @@ protected:
     
     vec3                mGyroDelta;
     vec3                mMagOffset;
+    vec3                mMagScale;
     
     // data
     char                mBuffer[BUFFER_SIZE];

@@ -51,18 +51,22 @@ Wax9::Wax9()
     mBattery = 0xffff;
     mPressure = 0xfffffffful;
     mTemperature = 0xffff;
+    mMagOffset = vec3(0);
+    mMagScale = vec3(1);
     
     // device settings
     bAccOn = true;
     bGyrOn = true;
     bMagOn = true;
     mOutputRate = 120;
-    mAccRate = 120;
-    mGyrRate = 120;
-    mMagRate = 120;
-    mAccRange = 8;
-    mGyrRange = 2000;
+    mAccRate = 200;     // 12, 50, 100, 200, 400, 800
+    mGyrRate = 200;     // 100, 200, 400, 800
+    mMagRate = 80;      // 5, 10, 20, 40, 80
+    mAccRange = 8;      // 2, 4, 8
+    mGyrRange = 2000;   // 250, 500, 2000
     mDataMode = 1;
+    
+    // mag range is is +/- 20,000 (2 mT or 0.2 Gs).
     
     mGyroDelta = vec3(0);
 }
@@ -264,7 +268,7 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     }
     
     // Call Fusion
-    vec3 m = mag + mMagOffset;
+    vec3 m = (mag + mMagOffset) * mMagScale;
     android::vec3_t magne({m.x, m.y, m.z});
     android::vec3_t gyro({gyr.x, gyr.y, gyr.z});
     android::vec3_t accel({acc.x, acc.y, acc.z});

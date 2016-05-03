@@ -221,7 +221,17 @@ void CalibrationApp::reset()
                 
 void CalibrationApp::calibrate()
 {
-    mWax9.setMagOffset(-mBox.getCenter());
+    // simple calibration. doesn't do ellipsoid fitting
+    // https://github.com/kriswiner/MPU-6050/wiki/Simple-and-Effective-Magnetometer-Calibration
+    
+    vec3 offset = -mBox.getCenter();
+    vec3 ext = mBox.getExtents();
+    vec3 scale = ext / ((ext.x + ext.y + ext.z) / 3.0f);
+    
+    mWax9.setMagOffset(offset);
+    mWax9.setMagScale(scale);
+    
+    CI_LOG_V("Wax9 calibrated. Offset: " << offset << ". Scale: " << scale);
 }
 
 void CalibrationApp::loadJson(fs::path path)
@@ -236,7 +246,12 @@ void CalibrationApp::loadJson(fs::path path)
                  doc["offset"]["y"].getValue<float>(),
                  doc["offset"]["z"].getValue<float>());
         
+        vec3 scale(doc["scale"]["x"].getValue<float>(),
+                   doc["scale"]["y"].getValue<float>(),
+                   doc["scale"]["z"].getValue<float>());
+        
         mWax9.setMagOffset(off);
+        mWax9.setMagScale(scale);
     }
     catch( const JsonTree::ExcJsonParserError& e )  {
         app::console() << "Failed to parse json file: " << e.what() << std::endl;
@@ -254,14 +269,23 @@ void CalibrationApp::saveJson()
         ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
         return ss.str();
     };
+    vec3 offset = mWax9.getMagOffset();
+    vec3 scale = mWax9.getMagScale();
     
     JsonTree off = JsonTree::makeObject("offset");
-    off.pushBack(JsonTree("x", -mBox.getCenter().x));
-    off.pushBack(JsonTree("y", -mBox.getCenter().y));
-    off.pushBack(JsonTree("z", -mBox.getCenter().z));
+    off.pushBack(JsonTree("x", offset.x));
+    off.pushBack(JsonTree("y", offset.y));
+    off.pushBack(JsonTree("z", offset.z));
+    
+    JsonTree sca = JsonTree::makeObject("scale");
+    sca.pushBack(JsonTree("x", scale.x));
+    sca.pushBack(JsonTree("y", scale.y));
+    sca.pushBack(JsonTree("z", scale.z));
     
     JsonTree doc = JsonTree::makeObject("");
+    doc.pushBack(JsonTree("version", "0.2"));
     doc.pushBack(off);
+    doc.pushBack(sca);
     
     fs::path jsonPath(app::getAppPath() / ( mSerialNames[mSerialName] +  "_mag_" + getTimestamp()  + ".json"));
     doc.write(writeFile(jsonPath), JsonTree::WriteOptions());
