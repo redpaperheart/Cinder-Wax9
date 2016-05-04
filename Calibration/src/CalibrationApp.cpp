@@ -25,14 +25,15 @@ public:
     void keyDown(KeyEvent event) override;
     void fileDrop(FileDropEvent event) override;
 
-    void reset();
+    void resetOrientation();
+    void resetCalibration();
     void calibrate();
-    void saveJson();
-    void loadJson(fs::path path);
+
     void drawOrientation();
     void drawCalibration();
     
-    quat mStartRotationAHRS;
+    quat mSensorStartRot;
+    quat mSensorZeroRot;
     CameraPersp mCam;
     CameraUi mCamUi;
     
@@ -51,6 +52,7 @@ public:
     // calibration
     vector<vec3> mMag;
     AxisAlignedBox mBox;
+    fs::path mJsonPath;
 };
 
 void CalibrationApp::setup()
@@ -65,12 +67,12 @@ void CalibrationApp::setup()
     // In this case the starting position will be the one with the arrow pointing up
     // and looking at us. So:
     
-//    mat4 startRotMat;
-//    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(1, 0, 0));  // x
-//    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(0, 1, 0));  // y
-//    startRotMat *= glm::rotate(0.0f, vec3(0, 0, 1));               // z
-//    
-//    mStartRotationAHRS = quat(startRotMat);  // save it in a quaternion
+    mat4 startRotMat;
+    startRotMat *= glm::rotate(toRadians(-90.0f), vec3(1, 0, 0));  // x
+    startRotMat *= glm::rotate(toRadians(90.0f), vec3(0, 1, 0));  // y
+    startRotMat *= glm::rotate(0.0f, vec3(0, 0, 1));               // z
+    
+    mSensorStartRot = quat(startRotMat);  // save it in a quaternion
     
 
     // setup camera
@@ -88,10 +90,9 @@ void CalibrationApp::setup()
     mParams->addParam("Device", mSerialNames, &mSerialName);
     mParams->addButton("Connect", [this] {
        try {
-           mWax9.setup(mSerialNames[mSerialName]);
+           mWax9.setup(mSerialNames[mSerialName], mJsonPath);
            mWax9.setDebug(false );
            mWax9.start();
-           mWax9.resetOrientation(mStartRotationAHRS);
        }
        catch (Exception e) {
        }
@@ -99,17 +100,14 @@ void CalibrationApp::setup()
     
     
     mParams->addSeparator();
-    mParams->addButton("Reset", std::bind(&CalibrationApp::reset, this));
+    mParams->addButton("Reset Calibration", std::bind(&CalibrationApp::resetCalibration, this));
     mParams->addButton("Calibrate", std::bind(&CalibrationApp::calibrate, this));
-    mParams->addButton("Save Json", std::bind(&CalibrationApp::saveJson, this));
+    mParams->addButton("Save Json", std::bind(&Wax9::saveJson, &mWax9));
     
     mParams->addSeparator();
     vector<string> modes = {"Calibration", "Orientation"};
     mParams->addParam("Display", modes, &mMode);
-    mParams->addButton("Reset Orientation", [this] {
-        mWax9.resetOrientation();
-    });
-    
+    mParams->addButton("Reset Orientation", std::bind(&CalibrationApp::resetOrientation, this));
 }
 
 void CalibrationApp::update()
@@ -153,22 +151,23 @@ void CalibrationApp::draw()
 void CalibrationApp::drawOrientation()
 {
     if (mWax9.isConnected() && mWax9.hasReadings()) {
-        
-        quat sensorRotOGL = mWax9.getOrientation();
-        
         gl::ScopedDepth depth(true);
         gl::ScopedMatrices cameraMatrices;
         gl::setMatrices(mCam);
-        gl::rotate(sensorRotOGL);
+        
+        // draw world coords
+        gl::drawCoordinateFrame(50.0, 1.0, 0.5);
         
         // draw sensor cube
+        gl::rotate(mSensorStartRot * mSensorZeroRot * mWax9.getOrientation());
+//        gl::rotate(mWax9.getOrientation());
         gl::drawColorCube(vec3(0.0f), vec3(30, 5, 15));
         gl::drawCoordinateFrame(25.0, 2.0, 1.0);
         
         // draw text and arrow
         gl::rotate( M_PI / 2.0f, 1.0f, 0.0f, 0.0f); //M_PI_2
         gl::scale(vec3(0.25, -0.25, 1.0));
-        gl::translate(vec3(0, -8, 2.52));
+        gl::translate(vec3(0, -8, 2.55));
         gl::drawStringCentered("◀︎Axivity", vec2(0, 0), Color::white(), Font("Arial", 24));
     }
 }
@@ -200,19 +199,24 @@ void CalibrationApp::drawCalibration()
 void CalibrationApp::keyDown(KeyEvent event)
 {
     if (event.getChar() == ' ') {
-        mWax9.resetOrientation(mStartRotationAHRS);
+        resetOrientation();
     }
 }
 
 void CalibrationApp::fileDrop(FileDropEvent event)
 {
-    fs::path path = event.getFile(0);
-    if (path.extension() == ".json") {
-        loadJson(path);
+    mJsonPath = event.getFile(0);
+    if (mJsonPath.extension() == ".json") {
+        mWax9.loadJson(mJsonPath);
     }
 }
 
-void CalibrationApp::reset()
+void CalibrationApp::resetOrientation()
+{
+    mSensorZeroRot = glm::inverse(mWax9.getOrientation());
+}
+
+void CalibrationApp::resetCalibration()
 {
     mBox.set(vec3(0), vec3(0));
     mMag.clear();
@@ -232,65 +236,6 @@ void CalibrationApp::calibrate()
     mWax9.setMagScale(scale);
     
     CI_LOG_V("Wax9 calibrated. Offset: " << offset << ". Scale: " << scale);
-}
-
-void CalibrationApp::loadJson(fs::path path)
-{
-    if(!fs::exists(path)) return;
-    
-    // parse and add story illustrations
-    try {
-        JsonTree doc(loadFile(path));
-        
-        vec3 off(doc["offset"]["x"].getValue<float>(),
-                 doc["offset"]["y"].getValue<float>(),
-                 doc["offset"]["z"].getValue<float>());
-        
-        vec3 scale(doc["scale"]["x"].getValue<float>(),
-                   doc["scale"]["y"].getValue<float>(),
-                   doc["scale"]["z"].getValue<float>());
-        
-        mWax9.setMagOffset(off);
-        mWax9.setMagScale(scale);
-    }
-    catch( const JsonTree::ExcJsonParserError& e )  {
-        app::console() << "Failed to parse json file: " << e.what() << std::endl;
-    }
-}
-
-void CalibrationApp::saveJson()
-{
-    const auto getTimestamp = []()
-    {
-        auto now = std::chrono::system_clock::now();
-        auto in_time_t = std::chrono::system_clock::to_time_t(now);
-        
-        std::stringstream ss;
-        ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
-        return ss.str();
-    };
-    vec3 offset = mWax9.getMagOffset();
-    vec3 scale = mWax9.getMagScale();
-    
-    JsonTree off = JsonTree::makeObject("offset");
-    off.pushBack(JsonTree("x", offset.x));
-    off.pushBack(JsonTree("y", offset.y));
-    off.pushBack(JsonTree("z", offset.z));
-    
-    JsonTree sca = JsonTree::makeObject("scale");
-    sca.pushBack(JsonTree("x", scale.x));
-    sca.pushBack(JsonTree("y", scale.y));
-    sca.pushBack(JsonTree("z", scale.z));
-    
-    JsonTree doc = JsonTree::makeObject("");
-    doc.pushBack(JsonTree("version", "0.2"));
-    doc.pushBack(off);
-    doc.pushBack(sca);
-    
-    fs::path jsonPath(app::getAppPath() / ( mSerialNames[mSerialName] +  "_mag_" + getTimestamp()  + ".json"));
-    doc.write(writeFile(jsonPath), JsonTree::WriteOptions());
-    
-    CI_LOG_V("Saved JSON file " << jsonPath );
 }
 
 CINDER_APP( CalibrationApp, RendererGl(RendererGl::Options().msaa(8)), [](CalibrationApp::Settings *s)

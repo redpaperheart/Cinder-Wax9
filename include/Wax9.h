@@ -100,6 +100,7 @@ public:
     Wax9();
     ~Wax9();
     
+    bool        setup(string portName, fs::path jsonPath, int historyLength = 300);
     bool        setup(string portName, int historyLength = 300);
     bool        start();
     bool        stop();
@@ -135,6 +136,9 @@ public:
     
     void        setGyroDelta(vec3 delta)            { mGyroDelta = delta; }
     vec3        getGyroDelta()                      { return mGyroDelta; }
+    
+    void saveJson();
+    void loadJson(fs::path path);
     
     static vec3 QuaternionToEuler(const quat &q);
     static quat AHRStoOpenGL(const quat &q);
@@ -182,6 +186,7 @@ protected:
     vec3                mMagScale;
     
     // data
+    std::string         mName;
     char                mBuffer[BUFFER_SIZE];
     bool                bBatteryLow;
     unsigned short      mBattery;       // in mV - see page 16 of dev guide

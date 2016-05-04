@@ -123,8 +123,8 @@
 		125DDE32AE7742AAA69978DA /* include */ = {
 			isa = PBXGroup;
 			children = (
-				20F1CCBC1CD8FA1D001A1853 /* Fusion.h */,
 				D3D131B6755648A2A71CF953 /* Wax9.h */,
+				20F1CCBC1CD8FA1D001A1853 /* Fusion.h */,
 			);
 			name = include;
 			sourceTree = "<group>";

@@ -26,6 +26,7 @@
  POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "cinder/Json.h"
 #include "cinder/Log.h"
 #include "Wax9.h"
 #include "vec.h"
@@ -76,14 +77,23 @@ Wax9::~Wax9()
 //    stop();
 }
 
+bool Wax9::setup(string portName, fs::path jsonPath, int historyLength)
+{
+    bool ok = setup(portName, historyLength);
+    loadJson(jsonPath);
+    return ok;
+}
+
 bool Wax9::setup(string portName, int historyLength)
 {
     bConnected = false;
+    mName = portName;
     mHistoryLength = historyLength;
     mSamples = new SampleBuffer(mHistoryLength);
     
     app::console() << "Available serial ports: " << std::endl;
-    for( auto device : Serial::getDevices()) app::console() << device.getName() << ", " << device.getPath() << std::endl;
+    for( auto device : Serial::getDevices())
+        app::console() << device.getName() << ", " << device.getPath() << std::endl;
 
     try {
 #ifdef CINDER_MSW
@@ -252,6 +262,8 @@ Wax9Sample Wax9::processPacket(Wax9Packet *p)
         if (bDebug)app::console() << "WAX9 - Battery: " << p->battery << " millivolts/n";
     }
     
+    CI_LOG_V("\ngyro:" << s.gyr << "\nbias: " << mGyroDelta << "\nsum:" << s.gyr - mGyroDelta << "\n");
+    
     return s;
 }
 
@@ -269,6 +281,8 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
     
     // Call Fusion
     vec3 m = (mag + mMagOffset) * mMagScale;
+//    vec3 m = mag + mMagOffset;
+//    android::vec3_t magne({m.x, m.y, m.z});
     android::vec3_t magne({m.x, m.y, m.z});
     android::vec3_t gyro({gyr.x, gyr.y, gyr.z});
     android::vec3_t accel({acc.x, acc.y, acc.z});
@@ -278,12 +292,19 @@ quat Wax9::calculateOrientation(const vec3 &acc, const vec3 &gyr, const vec3 &ma
 //    mFusion.handleGyro(gyro, 1.0f/(float)mOutputRate);      // option 2: use default delta
     mFusion.handleMag(magne);
     
-    android::quat_t att = mFusion.getAttitude();
+    if (mFusion.hasEstimate()) {
+        android::quat_t att = mFusion.getAttitude();
+        android::vec3_t bias = mFusion.getBias();
+        mGyroDelta = vec3(bias.x, bias.y, bias.z);
+        CI_LOG_V("\nattitude: " << quat(att.w, att.x, att.y, att.z));
+        return quat(att.w, att.x, att.y, att.z);    // glm stores W first!!!
+    }
+    CI_LOG_V("no estimate");
+    return quat();
     
 //    app::console() << " output dt: " << 1.0f / mOutputRate << " gryo dt: " << 1.0f / mGyrRate << " actual dT: " << diffSeconds << std::endl;
     
 //    return quat(att.x, att.y, att.z, att.w);
-    return quat(att.w, att.x, att.y, att.z);    // glm stores W first!!!
 }
 
 
@@ -549,3 +570,60 @@ quat Wax9::AHRStoOpenGL(const quat &q)
     return quat(sensorRotMat);
 }
 
+
+void Wax9::loadJson(fs::path path)
+{
+    if(!fs::exists(path) || path.empty()) return;
+    
+    // parse and add story illustrations
+    try {
+        JsonTree doc(loadFile(path));
+        
+        vec3 off(doc["offset"]["x"].getValue<float>(),
+                 doc["offset"]["y"].getValue<float>(),
+                 doc["offset"]["z"].getValue<float>());
+        
+        vec3 scale(doc["scale"]["x"].getValue<float>(),
+                   doc["scale"]["y"].getValue<float>(),
+                   doc["scale"]["z"].getValue<float>());
+        
+        setMagOffset(off);
+        setMagScale(scale);
+    }
+    catch( const JsonTree::ExcJsonParserError& e )  {
+        app::console() << "Failed to parse json file: " << e.what() << std::endl;
+    }
+}
+
+void Wax9::saveJson()
+{
+    const auto getTimestamp = []()
+    {
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+        
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&in_time_t), "%Y%m%d_%H%M%S");
+        return ss.str();
+    };
+    
+    JsonTree off = JsonTree::makeObject("offset");
+    off.pushBack(JsonTree("x", mMagOffset.x));
+    off.pushBack(JsonTree("y", mMagOffset.y));
+    off.pushBack(JsonTree("z", mMagOffset.z));
+    
+    JsonTree sca = JsonTree::makeObject("scale");
+    sca.pushBack(JsonTree("x", mMagScale.x));
+    sca.pushBack(JsonTree("y", mMagScale.y));
+    sca.pushBack(JsonTree("z", mMagScale.z));
+    
+    JsonTree doc = JsonTree::makeObject("");
+    doc.pushBack(JsonTree("version", "0.2"));
+    doc.pushBack(off);
+    doc.pushBack(sca);
+    
+    fs::path jsonPath(app::getAppPath() / ( mName +  "_mag_" + getTimestamp()  + ".json"));
+    doc.write(writeFile(jsonPath), JsonTree::WriteOptions());
+    
+    CI_LOG_V("Saved JSON file " << jsonPath );
+}
